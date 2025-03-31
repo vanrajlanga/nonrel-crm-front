@@ -1,0 +1,100 @@
+.secondary-nav {
+    background: var(--light-primary);
+    padding: .75rem 2rem;
+    border-bottom: 1px solid var(--light-border);
+    width: 100%;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center
+}
+
+.secondary-nav:before {
+    content: "";
+    position: absolute;
+    bottom: -1px;
+    left: 0;
+    width: 100%;
+    height: 1px;
+    background: linear-gradient(90deg,transparent,var(--light-accent),transparent)
+}
+
+.secondary-nav-list-wrapper {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -ms-overflow-style: none
+}
+
+.secondary-nav-list-wrapper::-webkit-scrollbar {
+    display: none
+}
+
+.secondary-nav-list {
+    display: inline-flex;
+    align-items: center;
+    gap: .25rem;
+    list-style: none;
+    margin: 0;
+    padding: .5rem;
+    background: var(--light-hover);
+    border-radius: var(--border-radius-lg);
+    width: auto;
+    min-width: 600px;
+    justify-content: center
+}
+
+.secondary-nav-link {
+    text-decoration: none;
+    color: var(--light-text-secondary);
+    font-size: .875rem;
+    font-weight: 500;
+    padding: .5rem 1rem;
+    border-radius: var(--border-radius-md);
+    transition: all .2s cubic-bezier(.4,0,.2,1);
+    position: relative;
+    display: flex;
+    align-items: center;
+    white-space: nowrap;
+    gap: 0.5rem;
+}
+
+.secondary-nav-link:hover {
+    color: var(--light-text);
+    background: var(--light-primary);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-sm)
+}
+
+.active-nav-button {
+    text-decoration: none;
+    background: var(--light-primary);
+    color: var(--light-accent);
+    font-size: .875rem;
+    font-weight: 600;
+    padding: .5rem 1rem;
+    border-radius: var(--border-radius-md);
+    transition: all .2s cubic-bezier(.4,0,.2,1);
+    border: none;
+    cursor: pointer;
+    position: relative;
+    display: flex;
+    align-items: center;
+    white-space: nowrap;
+    box-shadow: var(--shadow-sm);
+    gap: 0.5rem;
+}
+
+.active-nav-button:after {
+    content: "";
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translate(-50%);
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: var(--light-accent)
+}

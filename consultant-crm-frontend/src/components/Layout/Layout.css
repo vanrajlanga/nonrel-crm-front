@@ -1,0 +1,27 @@
+.layout {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.layout__header {
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    background-color: white;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.layout__main {
+    flex: 1;
+    padding: 20px;
+    margin-bottom: 60px; /* Height of footer */
+}
+
+.layout__footer {
+    position: sticky;
+    width: 100%;
+    background-color: white;
+    box-shadow: 0 -2px 4px rgba(0,0,0,0.1);
+    height: 60px;
+}

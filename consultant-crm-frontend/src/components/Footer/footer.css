@@ -1,0 +1,47 @@
+/* footer.css */
+
+.footer {
+    background-color: #000; /* same dark background as header */
+    color: #fff;
+    padding: 1rem 1.5rem;
+    font-family: 'Inter', sans-serif; /* or your preferred font */
+    position: relative;
+
+  }
+  
+  .footer__content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .footer__links {
+    background-color: #191919;
+    padding: 0.5rem 1rem;
+    border-radius: 9px;
+  }
+  
+  
+  .footer__links ul {
+    list-style: none;
+    flex-direction: column;
+    display: flex;
+    gap: 1rem;
+    margin: 0;
+    padding: 0;
+  }
+  
+  .footer__links a {
+    color: #fff;
+    text-decoration: none;
+    transition: color 0.3s;
+  }
+  
+  .footer__links a:hover {
+    color: #ccc;
+  }
+  
+  .footer__brand p {
+    margin: 0;
+    font-size: 0.9rem;
+  }
+  

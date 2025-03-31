@@ -1,0 +1,81 @@
+import React from 'react';
+import { useNavigate } from 'react-router-dom';
+import 'bootstrap/dist/css/bootstrap.min.css';
+import { BsPersonFill, BsBuildingsFill, BsPeopleFill } from 'react-icons/bs';
+
+const ConsultantMain = () => {
+  const navigate = useNavigate();
+
+  const registrationCards = [
+    {
+      title: 'Users',
+      description: 'User Details',
+      path: '/consultants/userManagement',
+      icon: <BsPersonFill size={40} className="text-primary" />
+    },
+    {
+      title: 'All Registration',
+      description: 'View and manage all consultant registrations in one place',
+      path: '/consultants/consultantsDetails',
+      icon: <BsBuildingsFill size={40} className="text-primary" />
+    },
+    {
+      title: 'Team',
+      description: 'Team Details',
+      path: '/consultant/team-registration',
+      icon: <BsPeopleFill size={40} className="text-primary" />
+    }
+  ];
+
+  return (
+    <div className="min-vh-100 py-4" style={{ background: 'linear-gradient(120deg, #f0f2f5 0%, #e3f2fd 100%)' }}>
+      <div className="container">
+        <div className="text-center mb-5">
+          <h1 className="display-4 fw-bold text-primary mb-3">
+            Welcome to Consultant Portal
+          </h1>
+          <h5 className="text-secondary mb-4">
+            Choose your registration type to get started
+          </h5>
+        </div>
+
+        <div className="row g-4 justify-content-center">
+          {registrationCards.map((card, index) => (
+            <div className="col-12 col-sm-6 col-md-4" key={index}>
+              <div 
+                className="card h-100 border-0 shadow-sm" 
+                style={{ 
+                  transition: 'transform 0.2s, box-shadow 0.2s',
+                  cursor: 'pointer'
+                }}
+                onClick={() => navigate(card.path)}
+                onMouseEnter={e => {
+                  e.currentTarget.style.transform = 'translateY(-8px)';
+                  e.currentTarget.style.boxShadow = '0 8px 40px -12px rgba(0,0,0,0.3)';
+                }}
+                onMouseLeave={e => {
+                  e.currentTarget.style.transform = 'none';
+                  e.currentTarget.style.boxShadow = '';
+                }}
+              >
+                <div className="card-body text-center p-4">
+                  <div className="mb-3">
+                    {card.icon}
+                  </div>
+                  <h4 className="card-title mb-3 text-primary">
+                    {card.title}
+                  </h4>
+                  <p className="card-text text-secondary">
+                    {card.description}
+                  </p>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default ConsultantMain;
