@@ -3,265 +3,87 @@ import React, { useState } from 'react';
 import Axios from '../services/api';
 import './ConsultantForm.css';
 import imageCompression from 'browser-image-compression';
+import { FiUpload, FiCheckCircle, FiInfo, FiCreditCard } from 'react-icons/fi';
 
 const ConsultantForm = () => {
-  const [currentStep, setCurrentStep] = useState(1);
   const [formData, setFormData] = useState({
-    name: '',
-    email: '',
+    fulllegalname: '',
+    technology: '',
+    dateOfBirth: '',
+    stateOfResidence: '',
+    visaStatus: '',
+    maritalStatus: '', 
     phone: '',
-    registrationFee: '',
-    registrationDate: '',
+    email: '',
+    currentAddress: '',
+    usaLandingDate: '',
+    // USA IT Experience
+    hasUsaItExperience: false,
+    usaFirstExperience: '',
+    usaSecondExperience: '',
+    usaOtherExperiences: '',
+    // Outside USA IT Experience
+    hasOutsideUsaItExperience: false,
+    outsideUsaFirstExperience: '',
+    outsideUsaSecondExperience: '',
+    outsideUsaOtherExperiences: '',
+    // USA Education
+    hasUsaEducation: false,
+    usaPgDiploma: '',
+    usaMastersDegree: '',
+    usaOtherCertifications: '',
+    // Outside USA Education
+    hasOutsideUsaEducation: false,
+    outsideUsaBachelorsDegree: '',
+    outsideUsaMastersDegree: '',
+    outsideUsaOtherCertifications: '',
+    // Documents
+    passportId: '',
     registrationProof: '',
-    onboardingFee: '',
-    onboardingDate: '',
-    onboardingProof: '',
-    consultantSalary: '',
-    dateOfJoining: '',
-    contractDuration: '',
-    monthlyFee: '',
-    monthlyStartDate: '',
-    monthlyDueDay: '',
-    extraServices: [],
-  });
-
-  // For simplicity, we'll only handle a single extra service in this example.
-  const [extraService, setExtraService] = useState({
-    description: '',
-    fee: '',
-    paymentDate: '',
-    proof: '',
+    termsAccepted: false
   });
 
   const [notification, setNotification] = useState({ message: '', type: '' });
 
   const [errors, setErrors] = useState({
-    name: '',
-    email: '',
+    fulllegalname: '',
+    technology: '',
+    dateOfBirth: '',
+    stateOfResidence: '',
+    visaStatus: '',
+    maritalStatus: '',
     phone: '',
-    registrationFee: '',
-    registrationDate: '',
-    consultantSalary: '',
-    monthlyFee: '',
+    email: '',
+    currentAddress: '',
+    usaLandingDate: '',
+    passportId: ''
   });
 
-  const steps = [
-    "Personal Information",
-    "Registration Details",
-    "Onboarding Details",
-    "Contract Details",
-    "Monthly Payment Details",
-    "Extra Services"
-  ];
-
-  const nextStep = () => {
-    if (currentStep < steps.length) {
-      setCurrentStep(currentStep + 1);
-    }
-  };
-
-  const prevStep = () => {
-    if (currentStep > 1) {
-      setCurrentStep(currentStep - 1);
-    }
-  };
-
-  const renderStepIndicator = () => (
-    <div className="step-indicator">
-      {steps.map((step, index) => (
-        <div 
-          key={index} 
-          className={`step ${currentStep === index + 1 ? 'active' : ''} 
-                           ${currentStep > index + 1 ? 'completed' : ''}`}
-        >
-          <div className="step-number">{index + 1}</div>
-          <div className="step-title">{step}</div>
-        </div>
-      ))}
-    </div>
-  );
-
-  const validateField = (name, value) => {
-    switch (name) {
-      case 'name':
-        return value.length < 2 ? 'Name must be at least 2 characters long' : '';
-      
-      case 'email':
-        return !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value) 
-          ? 'Please enter a valid email address'
-          : '';
-      
-      case 'phone':
-        return value && !/^\+?[\d\s-]{10,}$/.test(value)
-          ? 'Please enter a valid phone number'
-          : '';
-      
-      case 'registrationFee':
-      case 'consultantSalary':
-      case 'monthlyFee':
-        return value && (isNaN(value) || Number(value) < 0)
-          ? 'Please enter a valid amount'
-          : '';
-      
-      case 'registrationDate':
-      case 'dateOfJoining':
-      case 'monthlyStartDate':
-        return value && new Date(value) > new Date()
-          ? 'Date cannot be in the future'
-          : '';
-      
-      default:
-        return '';
-    }
-  };
-
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    
-    // Validate the field
-    const error = validateField(name, value);
-    setErrors(prev => ({
-      ...prev,
-      [name]: error
-    }));
-
-    // Update form data
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
-  };
-
-  const handleExtraChange = (e) => {
-    const { name, value } = e.target;
-    setExtraService((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
-  };
-
-  const convertToBase64 = (file) => {
-    return new Promise((resolve, reject) => {
-      const fileReader = new FileReader();
-      fileReader.readAsDataURL(file);
-      fileReader.onload = () => {
-        resolve(fileReader.result);
-      };
-      fileReader.onerror = (error) => {
-        reject(error);
-      };
-    });
-  };
-
-  const compressImage = async (file) => {
-    const options = {
-      maxSizeMB: 0.5, // Reduce to 500KB
-      maxWidthOrHeight: 800, // Reduce dimensions
-      useWebWorker: true,
-      initialQuality: 0.7 // Reduce initial quality
-    };
-    
-    try {
-      const compressedFile = await imageCompression(file, options);
-      // Check if file is still too large
-      if (compressedFile.size > 1024 * 1024) { // If still larger than 1MB
-        throw new Error('File is too large even after compression');
-      }
-      return compressedFile;
-    } catch (error) {
-      console.error('Error compressing image:', error);
-      throw error;
-    }
-  };
-
-  const handleFileChange = async (e) => {
-    try {
-      const { name } = e.target;
-      const file = e.target.files[0];
-      
-      if (!file) {
-        setNotification({ 
-          message: 'Please select a file', 
-          type: 'error' 
-        });
-        return;
-      }
-
-      // Check initial file size
-      if (file.size > 5 * 1024 * 1024) { // 5MB
-        setNotification({ 
-          message: 'File is too large. Please select a file smaller than 5MB', 
-          type: 'error' 
-        });
-        return;
-      }
-
-      // Validate file type
-      const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'application/pdf'];
-      if (!allowedTypes.includes(file.type)) {
-        setNotification({ 
-          message: 'Invalid file type. Only JPEG, PNG, GIF images and PDF files are allowed', 
-          type: 'error' 
-        });
-        return;
-      }
-
-      let base64;
-      if (file.type === 'application/pdf') {
-        // For PDFs, check if size is less than 1MB
-        if (file.size > 1024 * 1024) {
-          setNotification({ 
-            message: 'PDF file size should be less than 1MB', 
-            type: 'error' 
-          });
-          return;
-        }
-        base64 = await convertToBase64(file);
-      } else {
-        // Process images with compression
-        const processedFile = await compressImage(file);
-        base64 = await convertToBase64(processedFile);
-      }
-
-      // Final size check of base64 string
-      if (base64.length > 1024 * 1024) { // If larger than 1MB
-        throw new Error('Processed file is too large');
-      }
-
-      setFormData(prev => ({
-        ...prev,
-        [name]: base64
-      }));
-      
-      setNotification({ 
-        message: 'File processed successfully', 
-        type: 'success' 
-      });
-    } catch (error) {
-      console.error('Error processing file:', error);
-      setNotification({ 
-        message: error.message || 'Error processing file. Please select a smaller file.', 
-        type: 'error' 
-      });
-    }
-  };
+  const [fieldNotifications, setFieldNotifications] = useState({
+    registrationProof: { message: '', type: '' }
+  });
 
   const validateForm = () => {
     const newErrors = {};
     let isValid = true;
 
-    // Required fields by step
-    const requiredFields = {
-      1: ['name', 'email', 'phone'],
-      2: ['registrationFee', 'registrationDate'],
-      3: ['onboardingFee', 'onboardingDate'],
-      4: ['consultantSalary', 'dateOfJoining', 'contractDuration'],
-      5: ['monthlyFee', 'monthlyStartDate', 'monthlyDueDay'],
-    };
+    // All required fields in one go since we removed steps
+    const requiredFields = [
+      'fulllegalname', 
+      'technology', 
+      'dateOfBirth', 
+      'stateOfResidence', 
+      'visaStatus', 
+      'maritalStatus', 
+      'phone', 
+      'email', 
+      'currentAddress', 
+      'usaLandingDate',
+      'passportId',
+      'termsAccepted'
+    ];
 
-    // Validate current step's required fields
-    const currentFields = requiredFields[currentStep] || [];
-    currentFields.forEach(key => {
+    requiredFields.forEach(key => {
       if (!formData[key]) {
         newErrors[key] = `${key.charAt(0).toUpperCase() + key.slice(1).replace(/([A-Z])/g, ' $1')} is required`;
         isValid = false;
@@ -278,51 +100,278 @@ const ConsultantForm = () => {
     return isValid;
   };
 
+  const isFormValid = () => {
+    // Check if all required fields are filled and valid
+    const requiredFields = [
+      'fulllegalname', 
+      'technology', 
+      'dateOfBirth', 
+      'stateOfResidence', 
+      'visaStatus', 
+      'maritalStatus', 
+      'phone', 
+      'email', 
+      'currentAddress', 
+      'usaLandingDate',
+      'passportId',
+      'termsAccepted'
+    ];
+
+    // Check if all required fields have values
+    const allFieldsFilled = requiredFields.every(field => formData[field]);
+    
+    // Check if there are no validation errors
+    const noErrors = Object.values(errors).every(error => error === '');
+
+    return allFieldsFilled && noErrors;
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    // Validate current step before proceeding
     if (!validateForm()) {
       setNotification({
-        message: 'Please correct the errors in the form',
+        message: 'Please fill in all required fields correctly',
         type: 'error'
       });
       return;
     }
 
-    if (currentStep < steps.length) {
-      nextStep();
-      return;
-    }
-
-    // Add extraService to formData if provided
-    const dataToSend = {
-      ...formData,
-      extraServices: extraService.description ? [extraService] : [],
-    };
-
     try {
-      const res = await Axios.post('/consultants', dataToSend);
+      const res = await Axios.post('/consultants', formData);
       console.log('Consultant created:', res.data);
       setNotification({ message: 'Consultant registered successfully!', type: 'success' });
-      // Reset form and step
-      setFormData({
-        name: '', email: '', phone: '', registrationFee: '',
-        registrationDate: '', registrationProof: '', onboardingFee: '',
-        onboardingDate: '', onboardingProof: '', consultantSalary: '',
-        dateOfJoining: '', contractDuration: '', monthlyFee: '',
-        monthlyStartDate: '', monthlyDueDay: '', extraServices: [],
-      });
-      setExtraService({ description: '', fee: '', paymentDate: '', proof: '' });
-      setCurrentStep(1); // Reset to first step
       
-      // Clear notification after 5 seconds
+      // Reset form
+      setFormData({
+        fulllegalname: '',
+        technology: '',
+        dateOfBirth: '',
+        stateOfResidence: '',
+        visaStatus: '',
+        maritalStatus: '',
+        phone: '',
+        email: '',
+        currentAddress: '',
+        usaLandingDate: '',
+        hasUsaItExperience: false,
+        usaFirstExperience: '',
+        usaSecondExperience: '',
+        usaOtherExperiences: '',
+        hasOutsideUsaItExperience: false,
+        outsideUsaFirstExperience: '',
+        outsideUsaSecondExperience: '',
+        outsideUsaOtherExperiences: '',
+        hasUsaEducation: false,
+        usaPgDiploma: '',
+        usaMastersDegree: '',
+        usaOtherCertifications: '',
+        hasOutsideUsaEducation: false,
+        outsideUsaBachelorsDegree: '',
+        outsideUsaMastersDegree: '',
+        outsideUsaOtherCertifications: '',
+        passportId: '',
+        registrationProof: '',
+        termsAccepted: false
+      });
+      
       setTimeout(() => setNotification({ message: '', type: '' }), 5000);
     } catch (error) {
       console.error('Error creating consultant:', error);
-      setNotification({ message: 'Failed to register consultant. Please try again.', type: 'error' });
+      setNotification({ 
+        message: error.message || error.response?.data?.message || 'Failed to register consultant. Please try again.', 
+        type: 'error' 
+      });
       setTimeout(() => setNotification({ message: '', type: '' }), 5000);
     }
+  };
+
+  const validateField = (name, value) => {
+    switch (name) {
+      case 'fulllegalname':
+        return value.length < 2 
+          ? 'Full legal name must be at least 2 characters long'
+          : !/^[a-zA-Z\s.'-]+$/.test(value)
+          ? 'Name can only contain letters, spaces, and basic punctuation'
+          : '';
+      
+      case 'technology':
+        return value.length < 2 
+          ? 'Technology field must be at least 2 characters long'
+          : '';
+
+      case 'email':
+        return !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value) 
+          ? 'Please enter a valid email address'
+          : '';
+      
+      case 'phone':
+        // Allow international format: +CountryCode PhoneNumber
+        return !/^\+?[1-9]\d{0,3}[-\s]?(?:\d[-\s]?){8,14}$/.test(value)
+          ? 'Please enter a valid phone number with country code (e.g., +1 234-567-8900)'
+          : '';
+
+      case 'stateOfResidence':
+        return value.length < 2
+          ? 'Please enter a valid state name'
+          : !/^[a-zA-Z\s]+$/.test(value)
+          ? 'State name can only contain letters and spaces'
+          : '';
+
+      case 'currentAddress':
+        return value.length < 10
+          ? 'Please enter a complete address (minimum 10 characters)'
+          : '';
+
+      case 'passportId':
+        // Passport ID validation: alphanumeric, minimum 6 characters, no spaces
+        return !/^[A-Z0-9]{6,20}$/.test(value)
+          ? 'Passport ID must be 6-20 characters long and contain only capital letters and numbers'
+          : '';
+      
+      case 'dateOfBirth':
+        if (!value) return 'Date of birth is required';
+        const dob = new Date(value);
+        const today = new Date();
+        const age = today.getFullYear() - dob.getFullYear();
+        return dob > today 
+          ? 'Date cannot be in the future'
+          : age < 18
+          ? 'You must be at least 18 years old'
+          : age > 100
+          ? 'Please enter a valid date of birth'
+          : '';
+      
+      case 'usaLandingDate':
+        if (!value) return 'Landing date is required';
+        const landingDate = new Date(value);
+        const now = new Date();
+        return landingDate > now
+          ? 'Landing date cannot be in the future'
+          : landingDate < new Date('1900-01-01')
+          ? 'Please enter a valid landing date'
+          : '';
+
+      default:
+        return '';
+    }
+  };
+
+  const handleChange = (e) => {
+    const { name, value, type, checked } = e.target;
+    const fieldValue = type === 'checkbox' ? checked : value;
+    
+    // Validate the field
+    const error = validateField(name, fieldValue);
+    setErrors(prev => ({
+      ...prev,
+      [name]: error
+    }));
+
+    // Update form data
+    setFormData(prev => ({
+      ...prev,
+      [name]: fieldValue
+    }));
+  };
+
+  const handleFileChange = async (e) => {
+    const fieldName = e.target.name;
+    try {
+      const file = e.target.files[0];
+      
+      if (!file) {
+        setFieldNotifications(prev => ({
+          ...prev,
+          [fieldName]: { message: 'Please select a file', type: 'error' }
+        }));
+        return;
+      }
+
+      // Check initial file size
+      if (file.size > 5 * 1024 * 1024) {
+        setFieldNotifications(prev => ({
+          ...prev,
+          [fieldName]: { message: 'File is too large. Please select a file smaller than 5MB', type: 'error' }
+        }));
+        return;
+      }
+
+      // Validate file type
+      const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'application/pdf'];
+      if (!allowedTypes.includes(file.type)) {
+        setFieldNotifications(prev => ({
+          ...prev,
+          [fieldName]: { message: 'Invalid file type. Only JPEG, PNG, GIF images and PDF files are allowed', type: 'error' }
+        }));
+        return;
+      }
+
+      let base64;
+      if (file.type === 'application/pdf') {
+        if (file.size > 1024 * 1024) {
+          setFieldNotifications(prev => ({
+            ...prev,
+            [fieldName]: { message: 'PDF file size should be less than 1MB', type: 'error' }
+          }));
+          return;
+        }
+        base64 = await convertToBase64(file);
+      } else {
+        const processedFile = await compressImage(file);
+        base64 = await convertToBase64(processedFile);
+      }
+
+      setFormData(prev => ({
+        ...prev,
+        [fieldName]: base64
+      }));
+      
+      setFieldNotifications(prev => ({
+        ...prev,
+        [fieldName]: { message: 'File uploaded successfully', type: 'success' }
+      }));
+    } catch (error) {
+      console.error('Error processing file:', error);
+      setFieldNotifications(prev => ({
+        ...prev,
+        [fieldName]: { message: error.message || 'Error processing file. Please try again.', type: 'error' }
+      }));
+    }
+  };
+
+  const compressImage = async (file) => {
+    const options = {
+      maxSizeMB: 0.3, // Reduce to 300KB
+      maxWidthOrHeight: 600, // Reduce dimensions further
+      useWebWorker: true,
+      initialQuality: 0.5 // Reduce initial quality further
+    };
+    
+    try {
+      const compressedFile = await imageCompression(file, options);
+      // Check if file is still too large
+      if (compressedFile.size > 500 * 1024) { // If still larger than 500KB
+        throw new Error('File is too large even after compression');
+      }
+      return compressedFile;
+    } catch (error) {
+      console.error('Error compressing image:', error);
+      throw error;
+    }
+  };
+
+  const convertToBase64 = (file) => {
+    return new Promise((resolve, reject) => {
+      const fileReader = new FileReader();
+      fileReader.readAsDataURL(file);
+      fileReader.onload = () => {
+        resolve(fileReader.result);
+      };
+      fileReader.onerror = (error) => {
+        reject(error);
+      };
+    });
   };
 
   return (
@@ -333,254 +382,510 @@ const ConsultantForm = () => {
           {notification.message}
         </div>
       )}
-      {renderStepIndicator()}
       <form onSubmit={handleSubmit} className="consultant-form">
-        {currentStep === 1 && (
-          <fieldset className="form-section">
-            <legend>Personal Information</legend>
-            <div className="form-row">
-              <div className="form-group">
-                <label>Name:</label>
+        <fieldset className="form-section">
+          <legend>Personal Information</legend>
+          <div className="form-row">
+            <div className="form-group">
+              <label className="floating-input">
                 <input
-                  className={`form-input ${errors.name ? 'error' : ''}`}
-                  name="name"
-                  value={formData.name}
+                  className={`floating-input__field ${errors.fulllegalname ? 'error' : ''}`}
+                  name="fulllegalname"
+                  value={formData.fulllegalname}
                   onChange={handleChange}
                   required
+                  placeholder=" "
                 />
-                {errors.name && <span className="error-message">{errors.name}</span>}
-              </div>
-              <div className="form-group">
-                <label>Email:</label>
+                <span className="floating-input__label">Full Legal Name</span>
+              </label>
+              {errors.fulllegalname && <span className="error-message">{errors.fulllegalname}</span>}
+            </div>
+
+            <div className="form-group">
+              <label className="floating-input">
                 <input
-                  className={`form-input ${errors.email ? 'error' : ''}`}
+                  className={`floating-input__field ${errors.technology ? 'error' : ''}`}
+                  name="technology"
+                  value={formData.technology}
+                  onChange={handleChange}
+                  required
+                  placeholder=" "
+                />
+                <span className="floating-input__label">Technology</span>
+              </label>
+              {errors.technology && <span className="error-message">{errors.technology}</span>}
+            </div>
+
+            <div className="form-group">
+              <label className="floating-input">
+                <input
+                  className={`floating-input__field ${errors.dateOfBirth ? 'error' : ''}`}
+                  type="date"
+                  name="dateOfBirth"
+                  value={formData.dateOfBirth}
+                  onChange={handleChange}
+                  required
+                  placeholder=" "
+                />
+                <span className="floating-input__label">Date of Birth</span>
+              </label>
+              {errors.dateOfBirth && <span className="error-message">{errors.dateOfBirth}</span>}
+            </div>
+
+            <div className="form-group">
+              <label className="floating-input">
+                <input
+                  className={`floating-input__field ${errors.stateOfResidence ? 'error' : ''}`}
+                  name="stateOfResidence"
+                  value={formData.stateOfResidence}
+                  onChange={handleChange}
+                  required
+                  placeholder=" "
+                />
+                <span className="floating-input__label">State of Residence</span>
+              </label>
+              {errors.stateOfResidence && <span className="error-message">{errors.stateOfResidence}</span>}
+            </div>
+
+            <div className="form-group">
+              <label className="floating-input">
+                <select
+                  className={`floating-input__field ${errors.visaStatus ? 'error' : ''}`}
+                  name="visaStatus"
+                  value={formData.visaStatus}
+                  onChange={handleChange}
+                  required
+                >
+                  <option value="">Select Visa Status</option>
+                  <option value="H1B">H1B</option>
+                  <option value="F1">F1</option>
+                  <option value="L1">L1</option>
+                  <option value="GC">Green Card</option>
+                  <option value="Citizen">US Citizen</option>
+                  <option value="Other">Other</option>
+                </select>
+                <span className="floating-input__label">Visa Status</span>
+              </label>
+              {errors.visaStatus && <span className="error-message">{errors.visaStatus}</span>}
+            </div>
+
+            <div className="form-group">
+              <label className="floating-input">
+                <select
+                  className={`floating-input__field ${errors.maritalStatus ? 'error' : ''}`}
+                  name="maritalStatus"
+                  value={formData.maritalStatus}
+                  onChange={handleChange}
+                  required
+                >
+                  <option value="">Select Marital Status</option>
+                  <option value="Single">Single</option>
+                  <option value="Married">Married</option>
+                  <option value="Divorced">Divorced</option>
+                  <option value="Widowed">Widowed</option>
+                </select>
+                <span className="floating-input__label">Marital Status</span>
+              </label>
+              {errors.maritalStatus && <span className="error-message">{errors.maritalStatus}</span>}
+            </div>
+
+            <div className="form-group">
+              <label className="floating-input">
+                <input
+                  className={`floating-input__field ${errors.phone ? 'error' : ''}`}
+                  type="tel"
+                  name="phone"
+                  value={formData.phone}
+                  onChange={handleChange}
+                  required
+                  placeholder=" "
+                />
+                <span className="floating-input__label">Phone Number</span>
+              </label>
+              {errors.phone && <span className="error-message">{errors.phone}</span>}
+            </div>
+
+            <div className="form-group">
+              <label className="floating-input">
+                <input
+                  className={`floating-input__field ${errors.email ? 'error' : ''}`}
                   type="email"
                   name="email"
                   value={formData.email}
                   onChange={handleChange}
                   required
+                  placeholder=" "
                 />
-                {errors.email && <span className="error-message">{errors.email}</span>}
-              </div>
-              <div className="form-group">
-                <label>Phone:</label>
-                <input
-                  className={`form-input ${errors.phone ? 'error' : ''}`}
-                  type="tel"
-                  name="phone"
-                  value={formData.phone}
-                  onChange={handleChange}
-                />
-                {errors.phone && <span className="error-message">{errors.phone}</span>}
-              </div>
+                <span className="floating-input__label">Email</span>
+              </label>
+              {errors.email && <span className="error-message">{errors.email}</span>}
             </div>
-          </fieldset>
-        )}
 
-        {currentStep === 2 && (
-          <fieldset className="form-section">
-            <legend>Registration Details</legend>
-            <div className="form-row">
-              <div className="form-group">
-                <label>Registration Fee:</label>
-                <input 
-                  className={`form-input ${errors.registrationFee ? 'error' : ''}`}
-                  name="registrationFee" 
-                  type="number" 
-                  value={formData.registrationFee} 
-                  onChange={handleChange} 
-                  required
-                />
-                {errors.registrationFee && <span className="error-message">{errors.registrationFee}</span>}
-              </div>
-              <div className="form-group">
-                <label>Registration Date:</label>
-                <input 
-                  className={`form-input ${errors.registrationDate ? 'error' : ''}`}
-                  name="registrationDate" 
-                  type="date" 
-                  value={formData.registrationDate} 
-                  onChange={handleChange} 
-                  required
-                />
-                {errors.registrationDate && <span className="error-message">{errors.registrationDate}</span>}
-              </div>
-              <div className="form-group">
-                <label>Registration Proof:</label>
-                <input
-                  className="form-input"
-                  type="file"
-                  name="registrationProof"
-                  onChange={handleFileChange}
-                  accept="image/*,.pdf"
-                />
-              </div>
-            </div>
-          </fieldset>
-        )}
-
-        {currentStep === 3 && (
-          <fieldset className="form-section">
-            <legend>Onboarding Details</legend>
-            <div className="form-row">
-              <div className="form-group">
-                <label>Onboarding Fee:</label>
-                <input 
-                  className="form-input" 
-                  name="onboardingFee" 
-                  type="number" 
-                  value={formData.onboardingFee} 
-                  onChange={handleChange} 
-                />
-              </div>
-              <div className="form-group">
-                <label>Onboarding Date:</label>
-                <input 
-                  className="form-input" 
-                  name="onboardingDate" 
-                  type="date" 
-                  value={formData.onboardingDate} 
-                  onChange={handleChange} 
-                />
-              </div>
-              <div className="form-group">
-                <label>Onboarding Proof:</label>
-                <input
-                  className="form-input"
-                  type="file"
-                  name="onboardingProof"
-                  onChange={handleFileChange}
-                  accept="image/*,.pdf"
-                />
-              </div>
-            </div>
-          </fieldset>
-        )}
-
-        {currentStep === 4 && (
-          <fieldset className="form-section">
-            <legend>Contract Details</legend>
-            <div className="form-row">
-              <div className="form-group">
-                <label>Consultant Salary:</label>
-                <input 
-                  className={`form-input ${errors.consultantSalary ? 'error' : ''}`}
-                  name="consultantSalary" 
-                  type="number" 
-                  value={formData.consultantSalary} 
-                  onChange={handleChange} 
-                  required
-                />
-                {errors.consultantSalary && <span className="error-message">{errors.consultantSalary}</span>}
-              </div>
-              <div className="form-group">
-                <label>Date of Joining:</label>
-                <input 
-                  className={`form-input ${errors.dateOfJoining ? 'error' : ''}`}
-                  name="dateOfJoining" 
-                  type="date" 
-                  value={formData.dateOfJoining} 
-                  onChange={handleChange} 
-                  required
-                />
-                {errors.dateOfJoining && <span className="error-message">{errors.dateOfJoining}</span>}
-              </div>
-              <div className="form-group">
-                <label>Contract Duration (months):</label>
-                <select 
-                  className={`form-input ${errors.contractDuration ? 'error' : ''}`}
-                  name="contractDuration" 
-                  value={formData.contractDuration} 
+            <div className="form-group">
+              <label className="floating-input">
+                <textarea
+                  className={`floating-input__field ${errors.currentAddress ? 'error' : ''}`}
+                  name="currentAddress"
+                  value={formData.currentAddress}
                   onChange={handleChange}
                   required
+                  placeholder=" "
+                />
+                <span className="floating-input__label">Current Address</span>
+              </label>
+              {errors.currentAddress && <span className="error-message">{errors.currentAddress}</span>}
+            </div>
+
+            <div className="form-group">
+              <label className="floating-input">
+                <input
+                  className={`floating-input__field ${errors.usaLandingDate ? 'error' : ''}`}
+                  type="date"
+                  name="usaLandingDate"
+                  value={formData.usaLandingDate}
+                  onChange={handleChange}
+                  required
+                  placeholder=" "
+                />
+                <span className="floating-input__label">Date of Landing in USA</span>
+              </label>
+              {errors.usaLandingDate && <span className="error-message">{errors.usaLandingDate}</span>}
+            </div>
+          </div>
+        </fieldset>
+
+        <fieldset className="form-section">
+          <legend>USA IT Experience</legend>
+          <div className="form-row">
+            <div className="form-group checkbox-group">
+              <label htmlFor="hasUsaItExperience">
+                <input
+                  type="checkbox"
+                  id="hasUsaItExperience"
+                  name="hasUsaItExperience"
+                  checked={formData.hasUsaItExperience}
+                  onChange={handleChange}
+                />
+                <span className="checkbox"></span>
+                Do you have any IT Work Experience in USA?
+              </label>
+            </div>
+            {formData.hasUsaItExperience && (
+              <>
+                <div className="form-group">
+                  <label>First Experience:</label>
+                  <textarea
+                    className="form-input"
+                    name="usaFirstExperience"
+                    value={formData.usaFirstExperience}
+                    onChange={handleChange}
+                    placeholder="Company, Role, Duration, Technologies used"
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Second Experience:</label>
+                  <textarea
+                    className="form-input"
+                    name="usaSecondExperience"
+                    value={formData.usaSecondExperience}
+                    onChange={handleChange}
+                    placeholder="Company, Role, Duration, Technologies used"
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Other Experiences:</label>
+                  <textarea
+                    className="form-input"
+                    name="usaOtherExperiences"
+                    value={formData.usaOtherExperiences}
+                    onChange={handleChange}
+                    placeholder="List other experiences here"
+                  />
+                </div>
+              </>
+            )}
+          </div>
+        </fieldset>
+
+        <fieldset className="form-section">
+          <legend>Outside USA IT Experience</legend>
+          <div className="form-row">
+            <div className="form-group checkbox-group">
+              <label htmlFor="hasOutsideUsaItExperience">
+                <input
+                  type="checkbox"
+                  id="hasOutsideUsaItExperience"
+                  name="hasOutsideUsaItExperience"
+                  checked={formData.hasOutsideUsaItExperience}
+                  onChange={handleChange}
+                />
+                <span className="checkbox"></span>
+                Do you have any IT work experience Outside USA?
+              </label>
+            </div>
+            {formData.hasOutsideUsaItExperience && (
+              <>
+                <div className="form-group">
+                  <label>First Experience:</label>
+                  <textarea
+                    className="form-input"
+                    name="outsideUsaFirstExperience"
+                    value={formData.outsideUsaFirstExperience}
+                    onChange={handleChange}
+                    placeholder="Company, Role, Duration, Technologies used"
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Second Experience:</label>
+                  <textarea
+                    className="form-input"
+                    name="outsideUsaSecondExperience"
+                    value={formData.outsideUsaSecondExperience}
+                    onChange={handleChange}
+                    placeholder="Company, Role, Duration, Technologies used"
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Other Experiences:</label>
+                  <textarea
+                    className="form-input"
+                    name="outsideUsaOtherExperiences"
+                    value={formData.outsideUsaOtherExperiences}
+                    onChange={handleChange}
+                    placeholder="List other experiences here"
+                  />
+                </div>
+              </>
+            )}
+          </div>
+        </fieldset>
+
+        <fieldset className="form-section">
+          <legend>USA Education</legend>
+          <div className="form-row">
+            <div className="form-group checkbox-group">
+              <label htmlFor="hasUsaEducation">
+                <input
+                  type="checkbox"
+                  id="hasUsaEducation"
+                  name="hasUsaEducation"
+                  checked={formData.hasUsaEducation}
+                  onChange={handleChange}
+                />
+                <span className="checkbox"></span>
+                Do you have Education in USA?
+              </label>
+            </div>
+            {formData.hasUsaEducation && (
+              <>
+                <div className="form-group">
+                  <label>PG-Diploma:</label>
+                  <textarea
+                    className="form-input"
+                    name="usaPgDiploma"
+                    value={formData.usaPgDiploma}
+                    onChange={handleChange}
+                    placeholder="Institution, Field of Study, Year"
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Masters Degree:</label>
+                  <textarea
+                    className="form-input"
+                    name="usaMastersDegree"
+                    value={formData.usaMastersDegree}
+                    onChange={handleChange}
+                    placeholder="Institution, Field of Study, Year"
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Other Certifications:</label>
+                  <textarea
+                    className="form-input"
+                    name="usaOtherCertifications"
+                    value={formData.usaOtherCertifications}
+                    onChange={handleChange}
+                    placeholder="List other certifications here"
+                  />
+                </div>
+              </>
+            )}
+          </div>
+        </fieldset>
+
+        <fieldset className="form-section">
+          <legend>Outside USA Education</legend>
+          <div className="form-row">
+            <div className="form-group checkbox-group">
+              <label htmlFor="hasOutsideUsaEducation">
+                <input
+                  type="checkbox"
+                  id="hasOutsideUsaEducation"
+                  name="hasOutsideUsaEducation"
+                  checked={formData.hasOutsideUsaEducation}
+                  onChange={handleChange}
+                />
+                <span className="checkbox"></span>
+                Do you have any Educational Background outside USA?
+              </label>
+            </div>
+            {formData.hasOutsideUsaEducation && (
+              <>
+                <div className="form-group">
+                  <label>Bachelors Degree:</label>
+                  <textarea
+                    className="form-input"
+                    name="outsideUsaBachelorsDegree"
+                    value={formData.outsideUsaBachelorsDegree}
+                    onChange={handleChange}
+                    placeholder="Institution, Field of Study, Year"
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Masters Degree:</label>
+                  <textarea
+                    className="form-input"
+                    name="outsideUsaMastersDegree"
+                    value={formData.outsideUsaMastersDegree}
+                    onChange={handleChange}
+                    placeholder="Institution, Field of Study, Year"
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Other Certifications:</label>
+                  <textarea
+                    className="form-input"
+                    name="outsideUsaOtherCertifications"
+                    value={formData.outsideUsaOtherCertifications}
+                    onChange={handleChange}
+                    placeholder="List other certifications here"
+                  />
+                </div>
+              </>
+            )}
+          </div>
+        </fieldset>
+
+        {/* Documents and Terms Container */}
+        <div className="documents-terms-container">
+          {/* Documents section */}
+          <fieldset className="document-section">
+            <legend>Documents</legend>
+            <div className="form-row">
+              <div className="form-group">
+                <label>
+                  <FiCreditCard className="icon" />
+                  Please enter your Passport ID
+                </label>
+                <input
+                  className={`form-input ${errors.passportId ? 'error' : ''}`}
+                  type="text"
+                  name="passportId"
+                  value={formData.passportId}
+                  onChange={handleChange}
+                  required
+                  placeholder="Enter your passport ID (e.g., A1234567)"
+                />
+                {errors.passportId && <span className="error-message">{errors.passportId}</span>}
+              </div>
+
+              <div className="file-upload-group">
+                <label>
+                  <FiUpload className="icon" />
+                  Upload your payment proof
+                </label>
+                <div className="file-upload-wrapper">
+                  <input
+                    className="file-upload-input"
+                    type="file"
+                    name="registrationProof"
+                    onChange={handleFileChange}
+                    accept="image/*,.pdf"
+                  />
+                  <div className="file-upload-placeholder">
+                    <FiUpload size={48} color="#4299e1" />
+                    <p>Drop your image here, or click to browse</p>
+                  </div>
+                  {fieldNotifications.registrationProof.message && (
+                    <div className={`field-notification ${fieldNotifications.registrationProof.type}`}>
+                      {fieldNotifications.registrationProof.message}
+                    </div>
+                  )}
+                  <div className="upload-progress">
+                    <div 
+                      className="upload-progress-bar" 
+                      style={{ 
+                        width: formData.registrationProof ? '100%' : '0%'
+                      }}
+                    />
+                  </div>
+                  {formData.registrationProof && (
+                    <div className="upload-status">
+                      <span className="upload-status-text">
+                        <FiCheckCircle className="icon success-icon" />
+                        File uploaded successfully
+                      </span>
+                      <div className="upload-actions">
+                        <button
+                          type="button"
+                          className="upload-action-button"
+                          onClick={() => {
+                            setFormData(prev => ({ ...prev, registrationProof: '' }));
+                            setFieldNotifications(prev => ({
+                              ...prev,
+                              registrationProof: { message: '', type: '' }
+                            }));
+                          }}
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+                <div className="file-info">
+                  <FiInfo className="icon" />
+                  Supports: JPG, JPEG2000, PNG (Max size: 5MB)
+                </div>
+              </div>
+            </div>
+          </fieldset>
+
+          {/* Terms and Conditions section */}
+          <fieldset className="terms-section">
+            <legend>Terms and Conditions</legend>
+            <div className="terms-content">
+              <div className="terms-image">
+                <img src="assets/images/terms.jpg" alt="Terms and Conditions" />
+              </div>
+              <div className="form-row">
+                <div className="terms-checkbox">
+                  <label htmlFor="termsAccepted">
+                    <input
+                      type="checkbox"
+                      id="termsAccepted"
+                      name="termsAccepted"
+                      checked={formData.termsAccepted}
+                      onChange={handleChange}
+                      required
+                    />
+                    <span className="checkbox"></span>
+                    I have read and agree to the Terms and Conditions
+                  </label>
+                  {errors.termsAccepted && <span className="error-message">{errors.termsAccepted}</span>}
+                </div>
+              </div>
+              <div className="form-navigation">
+                <button 
+                  type="submit" 
+                  className={`submit-button ${!isFormValid() ? 'disabled' : ''}`}
+                  disabled={!isFormValid()}
                 >
-                  <option value="">Select Duration</option>
-                  <option value="8">8 months</option>
-                  <option value="10">10 months</option>
-                  <option value="12">12 months</option>
-                </select>
-                {errors.contractDuration && <span className="error-message">{errors.contractDuration}</span>}
+                  Submit Registration
+                </button>
               </div>
             </div>
           </fieldset>
-        )}
-
-        {currentStep === 5 && (
-          <fieldset className="form-section">
-            <legend>Monthly Payment Details</legend>
-            <div className="form-row">
-              <div className="form-group">
-                <label>Monthly Fee:</label>
-                <input 
-                  className={`form-input ${errors.monthlyFee ? 'error' : ''}`}
-                  name="monthlyFee" 
-                  type="number" 
-                  value={formData.monthlyFee} 
-                  onChange={handleChange} 
-                  required
-                />
-                {errors.monthlyFee && <span className="error-message">{errors.monthlyFee}</span>}
-              </div>
-              <div className="form-group">
-                <label>Monthly Start Date:</label>
-                <input 
-                  className={`form-input ${errors.monthlyStartDate ? 'error' : ''}`}
-                  name="monthlyStartDate" 
-                  type="date" 
-                  value={formData.monthlyStartDate} 
-                  onChange={handleChange} 
-                  required
-                />
-                {errors.monthlyStartDate && <span className="error-message">{errors.monthlyStartDate}</span>}
-              </div>
-              <div className="form-group">
-                <label>Monthly Due Day:</label>
-                <input 
-                  className={`form-input ${errors.monthlyDueDay ? 'error' : ''}`}
-                  name="monthlyDueDay" 
-                  type="number" 
-                  min="1" 
-                  max="31" 
-                  value={formData.monthlyDueDay} 
-                  onChange={handleChange} 
-                  required
-                />
-                {errors.monthlyDueDay && <span className="error-message">{errors.monthlyDueDay}</span>}
-              </div>
-            </div>
-          </fieldset>
-        )}
-
-        {currentStep === 6 && (
-          <fieldset className="form-section">
-            <legend>Extra Services</legend>
-            <div className="form-row">
-              <div className="form-group">
-                <label>Description:</label>
-                <input className="form-input" name="description" value={extraService.description} onChange={handleExtraChange} />
-              </div>
-              <div className="form-group">
-                <label>Fee:</label>
-                <input className="form-input" name="fee" type="number" value={extraService.fee} onChange={handleExtraChange} />
-              </div>
-              <div className="form-group">
-                <label>Payment Date:</label>
-                <input className="form-input" name="paymentDate" type="date" value={extraService.paymentDate} onChange={handleExtraChange} />
-              </div>
-            </div>
-          </fieldset>
-        )}
-
-        <div className="form-navigation">
-          {currentStep > 1 && (
-            <button type="button" onClick={prevStep} className="nav-button">
-              Previous
-            </button>
-          )}
-          <button type="submit" className="submit-button">
-  {currentStep === steps.length ? 'Submit' : 'Next'}
-</button>
-
         </div>
       </form>
     </div>

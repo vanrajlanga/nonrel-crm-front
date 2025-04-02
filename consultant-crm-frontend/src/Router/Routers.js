@@ -9,6 +9,11 @@ import ConsultantMain from '../components/Consultant/ConsultantMain';
 import ConsultantDetails from '../components/Consultant/ConsultantDetails';
 import LoginForm from '../components/Login/LoginForm';
 import SignupForm from '../components/Signup/SignupForm';
+import CompanyManagement from '../components/Company/CompanyManagement';
+import ConsultantJobDetails from '../components/Consultant/ConsultantJobDetails';
+// import ConsultantAggrementDetails from '../components/Consultant/ConsultantAggrementDetails';
+// import ConsultantInterviewDetails from '../components/Consultant/ConsultantInterviewDetails';
+// import ConsultantResumeBuilder from '../components/Consultant/ConsultantResumeBuilder';
 import Unauthorized from '../components/Unauthorized';
 import UserManagement from '../components/UserManagement/UserManagement';
 import PrivateRoute from '../components/PrivateRoute'; // Adjust the import path as needed
@@ -48,9 +53,9 @@ const Router = () => {
           }
         />
         <Route
-          path="/singleConsultant/:id"
+          path="/consultants/singleConsultant/:id"
           element={
-            <PrivateRoute allowedRoles={['admin', 'team']}>
+            <PrivateRoute allowedRoles={['admin']}>
               <SingleConsultatnt />
             </PrivateRoute>
           }
@@ -63,6 +68,46 @@ const Router = () => {
             </PrivateRoute>
           }
         />
+        <Route
+          path="/companies"
+          element={
+            <PrivateRoute allowedRoles={['admin', 'team']}>
+              <CompanyManagement />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/consultants/consultantJobDetails"
+          element={
+            <PrivateRoute allowedRoles={['admin', 'team']}>
+              <ConsultantJobDetails />
+            </PrivateRoute>
+          }
+        />  
+        {/* <Route
+          path="/consultants/consultantAggrementDetails"
+          element={
+            <PrivateRoute allowedRoles={['admin', 'team']}>
+              <ConsultantAggrementDetails />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/consultants/consultantInterviewDetails"
+          element={
+            <PrivateRoute allowedRoles={['admin', 'team']}>
+              <ConsultantInterviewDetails />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/consultants/consultantResumeBuilder"
+          element={
+            <PrivateRoute allowedRoles={['admin', 'team']}>
+              <ConsultantResumeBuilder />
+            </PrivateRoute>
+          }
+        /> */}
         {/* Optionally add routes for login, signup, unauthorized, etc. */}
       </Routes>
     </>

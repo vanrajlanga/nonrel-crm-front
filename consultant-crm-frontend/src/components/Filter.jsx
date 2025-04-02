@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { BsFilter } from 'react-icons/bs';
+import { BsFilter, BsSearch } from 'react-icons/bs';
 import { toast } from 'react-toastify';
+import './Filter.css';
 
-const Filter = ({ onFilterApplied, filterConfig = [] }) => {
+const Filter = ({ onFilterApplied, filterConfig = [], onSearch, searchPlaceholder = "Search..." }) => {
   const [showFilters, setShowFilters] = useState(false);
   const [filterOptions, setFilterOptions] = useState({});
+  const [searchQuery, setSearchQuery] = useState('');
 
   // Initialize filterOptions from filterConfig
   useEffect(() => {
@@ -20,6 +22,14 @@ const Filter = ({ onFilterApplied, filterConfig = [] }) => {
       ...filterOptions,
       [field]: value
     });
+  };
+
+  const handleSearchChange = (e) => {
+    const value = e.target.value || '';
+    setSearchQuery(value);
+    if (onSearch && typeof onSearch === 'function') {
+      onSearch(value);
+    }
   };
 
   const applyFilters = () => {
@@ -38,6 +48,12 @@ const Filter = ({ onFilterApplied, filterConfig = [] }) => {
     });
     setFilterOptions(resetOptions);
     onFilterApplied(resetOptions);
+    
+    setSearchQuery('');
+    if (onSearch) {
+      onSearch('');
+    }
+    
     toast.info('Filters reset!', {
       position: "top-right",
       autoClose: 2000
@@ -103,44 +119,59 @@ const Filter = ({ onFilterApplied, filterConfig = [] }) => {
   };
 
   return (
-    <div className="filter-section">
-      <div className="d-flex justify-content-between align-items-center">
-        <button 
-          className="btn btn-filter"
-          onClick={() => setShowFilters(!showFilters)}
-        >
-          <BsFilter className="me-2" />
-          Filter 
-        </button>
-        
-        <div>
-          <span className="text-muted small me-2">Apply filters to narrow results</span>
-        </div>
+    <div className="filter-search-container">
+      {/* Search Section */}
+      <div className="search-container">
+        <input
+          type="text"
+          className="form-control search-input"
+          placeholder={searchPlaceholder}
+          value={searchQuery}
+          onChange={handleSearchChange}
+        />
+        <BsSearch className="search-icon" />
       </div>
-      
-      {showFilters && (
-        <div className="filter-options-container mt-3 p-3">
-          <div className="row g-3">
-            {filterConfig.map((filter, index) => (
-              <div key={filter.name} className={`col-md-${filter.type === 'dateRange' ? '6' : '4'}`}>
-                <label className="form-label">{filter.label}</label>
-                {renderFilterControl(filter)}
-              </div>
-            ))}
-            
-            <div className="col-12 d-flex justify-content-end mt-4">
-              <div className="d-flex gap-2">
-                <button className="btn btn-apply" onClick={applyFilters}>
-                  Apply Filters
-                </button>
-                <button className="btn btn-reset" onClick={resetFilters}>
-                  Reset
-                </button>
+
+      {/* Filter Section */}
+      <div className="filter-section">
+        <div className="d-flex justify-content-between align-items-center">
+          <button 
+            className="btn btn-filter"
+            onClick={() => setShowFilters(!showFilters)}
+          >
+            <BsFilter className="me-2" />
+            Filter 
+          </button>
+          
+          <div>
+            <span className="text-muted small me-2">Apply filters to narrow results</span>
+          </div>
+        </div>
+        
+        {showFilters && (
+          <div className="filter-options-container mt-3 p-3">
+            <div className="row g-3">
+              {filterConfig.map((filter, index) => (
+                <div key={filter.name} className={`col-md-${filter.type === 'dateRange' ? '6' : '4'}`}>
+                  <label className="form-label">{filter.label}</label>
+                  {renderFilterControl(filter)}
+                </div>
+              ))}
+              
+              <div className="col-12 d-flex justify-content-end mt-4">
+                <div className="d-flex gap-2">
+                  <button className="btn btn-apply" onClick={applyFilters}>
+                    Apply Filters
+                  </button>
+                  <button className="btn btn-reset" onClick={resetFilters}>
+                    Reset
+                  </button>
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 };

@@ -22,6 +22,7 @@ const SignupForm = () => {
       localStorage.setItem('token', token);
       localStorage.setItem('role', role);
       navigate('/home');
+      window.location.reload();
     } catch (err) {
       setError(err.response?.data?.message || 'Signup failed');
     }

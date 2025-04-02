@@ -6,57 +6,56 @@
     justify-content: space-between;
     background: #000;  /* black background */
     color: #fff;
-    padding: 1.5rem 1.5rem;
+    padding: 0.5rem 1.5rem;
     position: relative;
     font-family: 'Inter', sans-serif; /* or your preferred font */
-
-  }
+}
   
-  /* Left brand/logo */
-  .header__brand .brand-title {
+/* Left brand/logo */
+.header__brand .brand-title {
     margin: 0;
     font-size: 1.25rem;
     font-weight: bold;
-  }
+}
   
-  /* Center nav container (pill-shaped) */
-  .header__nav {
+/* Center nav container (pill-shaped) */
+.header__nav {
     position: absolute;  /* absolute so we can center it horizontally */
     left: 50%;
     transform: translateX(-50%);
     background-color: #191919; /* slightly different from #000 for contrast */
     padding: 0.8rem 1rem;
     border-radius: 999px;      /* pill shape */
-  }
+}
   
-  .header__nav ul {
+.header__nav ul {
     display: flex;
     gap: 1.5rem;       /* space between nav links */
     list-style: none;
     margin: 0;
     padding: 0;
     align-items: center;
-  }
+}
   
-  .header__nav a {
+.header__nav a {
     text-decoration: none;
     color: #fff;
     font-size: 0.95rem;
     transition: color 0.3s;
-  }
+}
   
-  .header__nav a:hover {
+.header__nav a:hover {
     color: #ccc;
-  }
+}
   
-  /* Right button container */
-  .header__cta {
+/* Right button container */
+.header__cta {
     display: flex;
     align-items: center;
-  }
+}
   
-  /* "Get Started" button */
-  .cta-button {
+/* "Get Started" button */
+.cta-button {
     background-color: #fff;
     color: #000;
     border: none;
@@ -65,28 +64,18 @@
     font-weight: 500;
     cursor: pointer;
     transition: background-color 0.3s, color 0.3s;
-  }
+}
   
-  .cta-button:hover {
+.cta-button:hover {
     background-color: #ccc;
     color: #000;
-  }
-
-.cta-button.hidden {
-  opacity: 0;
-  transition: opacity 0.2s ease-out;
-}
-
-.cta-button.visible {
-  opacity: 1;
-  transition: opacity 0.2s ease-in;
 }
 
 /* Search bar styles */
 .header__search {
-  position: relative;
-  margin-left: 1.5rem;
-  width: 30%;
+    position: relative;
+    margin-left: 1.5rem;
+    width: 30%;
 }
 
 .search-input {
@@ -100,6 +89,7 @@
     font-size: .875rem;
     transition: var(--transition-normal);
 }
+
 .search-icon {
     position: absolute;
     left: 1rem;
@@ -110,11 +100,11 @@
 }
 
 .search-input:focus {
-  outline: none;
-  width: 250px;
-  background: #444;
+    outline: none;
+    width: 250px;
+    background: #444;
 }
 
 .search-input::placeholder {
-  color: #999;
+    color: #999;
 }

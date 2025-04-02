@@ -1,7 +1,8 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import 'bootstrap/dist/css/bootstrap.min.css';
-import { BsPersonFill, BsBuildingsFill, BsPeopleFill } from 'react-icons/bs';
+import { BsPersonFill, BsBuildingsFill, BsPeopleFill,BsFileEarmarkText,BsPersonLinesFill, } from 'react-icons/bs';
+import { MdOutlineDocumentScanner } from "react-icons/md";
 
 const ConsultantMain = () => {
   const navigate = useNavigate();
@@ -20,10 +21,28 @@ const ConsultantMain = () => {
       icon: <BsBuildingsFill size={40} className="text-primary" />
     },
     {
-      title: 'Team',
-      description: 'Team Details',
-      path: '/consultant/team-registration',
+      title: 'Consultants Job Details',
+      description: 'Consultants Job Details',
+      path: '/consultants/consultantJobDetails',
       icon: <BsPeopleFill size={40} className="text-primary" />
+    },
+    {
+      title: 'Consultants Aggrement Details',
+      description: 'Consultants Aggrement Details',
+      path: '/consultants/consultantAggrementDetails',
+      icon: <BsFileEarmarkText size={40} className="text-primary" />
+    },
+    {
+      title: 'Consultants Interview Details',
+      description: 'Consultants Interview Details',
+      path: '/consultants/consultantInterviewDetails',
+      icon: <BsPersonLinesFill size={40} className="text-primary" />
+    },
+    {
+      title: 'Consultants Resume Builder',
+      description: 'Consultants Resume Builder',
+      path: '/consultants/consultantResumeBuilder',
+      icon: <MdOutlineDocumentScanner size={40} className="text-primary" />
     }
   ];
 

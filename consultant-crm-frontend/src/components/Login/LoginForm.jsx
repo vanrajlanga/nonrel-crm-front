@@ -21,8 +21,11 @@ const LoginForm = () => {
       localStorage.setItem('token', token);
       localStorage.setItem('role', role);
       
-      // Use React Router's navigate function for SPA navigation
+      // First navigate to home
       navigate('/home');
+      
+      // Then refresh the page
+      window.location.reload();
     } catch (err) {
       setError(err.response?.data?.message || 'Login failed');
     }

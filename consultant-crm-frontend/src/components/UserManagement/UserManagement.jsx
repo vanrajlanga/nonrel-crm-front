@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Axios from '../../services/api';
 import './usermanagement.css';
+import { BsArrowLeft } from 'react-icons/bs';
 
 const CreateUserModal = ({ onClose, onSave, token }) => {
   const [username, setUsername] = useState('');
@@ -89,12 +90,17 @@ const EditUserModal = ({ user, onClose, onSave, token }) => {
         role,
         ...(password && { password })
       };
-      await Axios.put(`/users/${user._id}`, updateData, config);
+      
+      if (!user.id) {
+        throw new Error('User ID is missing');
+      }
+      
+      await Axios.put(`/users/${user.id}`, updateData, config);
       onSave();
       onClose();
     } catch (error) {
       console.error('Error updating user:', error);
-      alert(error.response?.data?.message || 'Failed to update user');
+      alert(error.message || error.response?.data?.message || 'Failed to update user');
     }
   };
 
@@ -108,12 +114,14 @@ const EditUserModal = ({ user, onClose, onSave, token }) => {
             value={username}
             onChange={(e) => setUsername(e.target.value)}
             placeholder="Username"
+            required
           />
           <input
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             placeholder="Email"
+            required
           />
           <input
             type="password"
@@ -207,7 +215,7 @@ const UserManagement = () => {
           Authorization: `Bearer ${token}`,
         },
       };
-      await Axios.delete(`/users/${deleteUser._id}`, config);
+      await Axios.delete(`/users/${deleteUser.id}`, config);
       fetchUsers();
       setDeleteUser(null);
     } catch (error) {
@@ -217,27 +225,42 @@ const UserManagement = () => {
   };
 
   const handleEditClick = (user) => {
+    if (!user.id) {
+      console.error('User ID is missing:', user);
+      alert('Cannot edit user: ID is missing');
+      return;
+    }
     setSelectedUser(user);
     setIsEditModalOpen(true);
   };
 
   return (
     <div className="user-management-container">
-      <div className="header-actions">
-        <h2>User Management</h2>
-        <button 
-          className="add-user-btn"
-          onClick={() => setIsCreateModalOpen(true)}
-        >
-          Add User
-        </button>
+      <button 
+        className="back-btn"
+        onClick={() => navigate('/consultants')}
+      >
+        <BsArrowLeft /> Back to Consultants
+      </button>
+      
+      <div className="header-section">
+        <div className="header-actions">
+          <h2>User Management</h2>
+          <button 
+            className="add-user-btn"
+            onClick={() => setIsCreateModalOpen(true)}
+          >
+            Add User
+          </button>
+        </div>
       </div>
+      
       {loading && <p>Loading users...</p>}
       {error && <p className="error-message">{error}</p>}
       {!loading && !error && (
         <div className="users-list">
           {users.map((user) => (
-            <div key={user._id} className="user-card">
+            <div key={user.id} className="user-card">
               <div className="user-info">
                 <h3>{user.username}</h3>
                 <p>{user.email}</p>
@@ -245,7 +268,10 @@ const UserManagement = () => {
                 <p>Created: {new Date(user.createdAt).toLocaleDateString()}</p>
               </div>
               <div className="user-actions">
-                <button onClick={() => handleEditClick(user)}>
+                <button 
+                  onClick={() => handleEditClick(user)}
+                  className="edit-btn"
+                >
                   Edit
                 </button>
                 <button 
