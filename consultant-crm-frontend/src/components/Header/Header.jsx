@@ -5,20 +5,37 @@ import './header.css';
 
 const Header = () => {
   const navigate = useNavigate();
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(!!localStorage.getItem('token'));
   const [searchQuery, setSearchQuery] = useState('');
+  const [username, setUsername] = useState(localStorage.getItem('username') || '');
 
+  // Listen for auth state changes
   useEffect(() => {
     const checkLoginStatus = () => {
       const token = localStorage.getItem('token');
-      setIsLoggedIn(!!token); // Convert token to boolean
+      const storedUsername = localStorage.getItem('username');
+      setIsLoggedIn(!!token);
+      setUsername(storedUsername || '');
     };
-    
+
+    // Check on mount and when localStorage changes
     checkLoginStatus();
-    // Add event listener for storage changes
+
+    // Custom event for auth state changes
+    const handleAuthChange = (event) => {
+      setIsLoggedIn(event.detail.isLoggedIn);
+      if (event.detail.isLoggedIn) {
+        setUsername(event.detail.username);
+      } else {
+        setUsername('');
+      }
+    };
+
+    window.addEventListener('authStateChange', handleAuthChange);
     window.addEventListener('storage', checkLoginStatus);
-    
+
     return () => {
+      window.removeEventListener('authStateChange', handleAuthChange);
       window.removeEventListener('storage', checkLoginStatus);
     };
   }, []);
@@ -30,7 +47,22 @@ const Header = () => {
   const handleLogout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('role');
+    localStorage.removeItem('username');
+    localStorage.removeItem('email');
+    
+    // Dispatch custom event with detail
+    const authEvent = new CustomEvent('authStateChange', {
+      detail: { 
+        isLoggedIn: false,
+        username: '',
+        email: '',
+        role: ''
+      }
+    });
+    window.dispatchEvent(authEvent);
+    
     setIsLoggedIn(false);
+    setUsername('');
     navigate('/');
   };
 
@@ -42,7 +74,7 @@ const Header = () => {
   return (
     <>
       <header className="header">
-        <div className="header__brand">
+        <div className="header__brand" onClick={() => navigate('/')}>
           <h1 className="brand-title">CRM System</h1>
         </div>
 
@@ -62,15 +94,18 @@ const Header = () => {
 
         <div className="header__cta">
           {isLoggedIn ? (
-            <button 
-              className="cta-button"
-              onClick={handleLogout}
-            >
-              Logout
-            </button>
+            <div className="user-section">
+              {username && <span className="username">{username}</span>}
+              <button 
+                className="cta-button"
+                onClick={handleLogout}
+              >
+                Logout
+              </button>
+            </div>
           ) : (
             <button className="cta-button" onClick={handleGetStarted}>
-              Get Started
+              Login / Signup
             </button>
           )}
         </div>

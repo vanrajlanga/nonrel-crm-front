@@ -108,3 +108,45 @@
 .search-input::placeholder {
     color: #999;
 }
+
+.user-section {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  background-color: rgba(0, 0, 0, 0.1);
+  padding: 0.5rem 1rem;
+  border-radius: 999px;
+  margin-left: 1rem;
+}
+
+.username {
+  color: #fff;
+  font-weight: 600;
+  font-size: 0.9rem;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  border-radius: 5px;
+    padding: 5px;
+    background: linear-gradient(45deg, #4299e1, #667eea);
+}
+
+.username::before {
+  margin-right: 0.5rem;
+  font-size: 1.1rem;
+}
+
+/* Update the CTA button styles when inside user-section */
+.user-section .cta-button {
+  background-color: #ff3e3e;
+  color: white;
+  padding: 0.4rem 1rem;
+  font-size: 0.9rem;
+  transition: all 0.3s ease;
+}
+
+.user-section .cta-button:hover {
+  background-color: #ff1f1f;
+  color: white;
+  transform: translateY(-1px);
+}

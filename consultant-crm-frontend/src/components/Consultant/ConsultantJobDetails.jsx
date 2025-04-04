@@ -22,7 +22,14 @@ const ConsultantJobDetails = () => {
   const [pageSizeOptions] = useState([5, 10, 20, 50]);
 
   const [showFeesModal, setShowFeesModal] = useState(false);
+  const [showAgreementModal, setShowAgreementModal] = useState(false);
   const [selectedConsultant, setSelectedConsultant] = useState(null);
+  const [agreementData, setAgreementData] = useState({
+    agreementDate: '',
+    emiDate: '',
+    emiAmount: '',
+    remark: ''
+  });
   const [feesData, setFeesData] = useState({
     totalFees: '',
     receivedFees: '',
@@ -31,80 +38,159 @@ const ConsultantJobDetails = () => {
   });
 
   const [filterConfig, setFilterConfig] = useState([]);
-  const [isAdmin, setIsAdmin] = useState(false);
+  const [issuperAdmin, setIssuperAdmin] = useState(false);
 
   const loadJobDetails = async () => {
     try {
       setLoading(true);
       setError(null);
       
-      // Get all consultants first
-      const consultantsResponse = await Axios.get('/consultants');
-      // Filter only placed consultants
-      const placedConsultants = consultantsResponse.data.filter(consultant => consultant.isPlaced === true);
-      
-      // Fetch job details only for placed consultants
-      const jobDetailsPromises = placedConsultants.map(consultant =>
-        Axios.get(`/consultants/${consultant.id}/job-details`)
-          .then(response => ({
-            ...response.data,
-            consultantId: consultant.id
-          }))
-          .catch(error => {
-            console.error(`Error fetching job details for consultant ${consultant.id}:`, error);
-            return null;
-          })
-      );
+      const role = localStorage.getItem('role');
+      let jobDetailsData = [];
 
-      const results = await Promise.all(jobDetailsPromises);
-      const validResults = results.filter(result => result !== null);
-      
-      console.log('Job details:', validResults);
-      setJobDetails(validResults);
-      setFilteredJobDetails(validResults);
-
-      // Update filter configuration with unique companies and positions
-      const uniqueCompanies = [...new Set(validResults.map(item => item.companyName))].filter(Boolean);
-      const uniquePositions = [...new Set(validResults.map(item => item.position))].filter(Boolean);
-
-      setFilterConfig([
-        {
-          name: 'companyName',
-          label: 'Company',
-          type: 'select',
-          defaultValue: 'all',
-          options: [
-            { value: 'all', label: 'All Companies' },
-            ...uniqueCompanies.map(company => ({
-              value: company,
-              label: company
+      if (role === 'superAdmin') {
+        // For superAdmin, use the new endpoint that returns all placed consultants
+        const response = await Axios.get('/placed-consultants');
+        // Ensure we're working with an array and map the data to a consistent structure
+        jobDetailsData = Array.isArray(response.data) ? response.data : 
+                        Array.isArray(response.data.jobDetails) ? response.data.jobDetails : [];
+        
+        // Map the data to ensure consistent structure
+        jobDetailsData = jobDetailsData.map(detail => ({
+          consultantId: detail.consultantId || detail.id,
+          fullName: detail.fullName || detail.consultant?.fulllegalname,
+          email: detail.email || detail.consultant?.email,
+          companyName: detail.companyName,
+          position: detail.position || detail.jobType,
+          dateOfJoining: detail.dateOfJoining,
+          createdBy: detail.createdBy,
+          feesInfo: detail.feesInfo || {
+            totalFees: detail.totalFees || 0,
+            receivedFees: detail.receivedFees || 0,
+            remainingFees: detail.remainingFees || 0
+          },
+          feesStatus: detail.feesStatus || 'pending',
+          isAgreement: detail.isAgreement || false
+        }));
+      } else {
+        // For other roles (coordinator, support), use the existing endpoint
+        const consultantsResponse = await Axios.get('/consultants');
+        const placedConsultants = Array.isArray(consultantsResponse.data) ? 
+          consultantsResponse.data.filter(consultant => consultant.isPlaced === true) : [];
+        
+        // Fetch job details only for placed consultants
+        const jobDetailsPromises = placedConsultants.map(consultant =>
+          Axios.get(`/consultants/${consultant.id}/job-details`)
+            .then(response => ({
+              consultantId: consultant.id,
+              fullName: consultant.fulllegalname,
+              email: consultant.email,
+              companyName: response.data.companyName,
+              position: response.data.position || response.data.jobType,
+              dateOfJoining: response.data.dateOfJoining,
+              createdBy: response.data.createdBy,
+              feesInfo: response.data.feesInfo || {
+                totalFees: response.data.totalFees || 0,
+                receivedFees: response.data.receivedFees || 0,
+                remainingFees: response.data.remainingFees || 0
+              },
+              feesStatus: response.data.feesStatus || 'pending',
+              isAgreement: response.data.isAgreement || false
             }))
-          ]
-        },
-        {
-          name: 'position',
-          label: 'Position',
-          type: 'select',
-          defaultValue: 'all',
-          options: [
-            { value: 'all', label: 'All Positions' },
-            ...uniquePositions.map(position => ({
-              value: position,
-              label: position
-            }))
-          ]
-        },
-        {
-          name: 'dateOfJoining',
-          label: 'Date of Joining',
-          type: 'dateRange',
-          defaultValue: ''
-        }
-      ]);
+            .catch(error => {
+              console.error(`Error fetching job details for consultant ${consultant.id}:`, error);
+              return null;
+            })
+        );
+
+        const results = await Promise.all(jobDetailsPromises);
+        jobDetailsData = results.filter(result => result !== null);
+      }
+      
+      console.log('Job details:', jobDetailsData);
+      
+      // Ensure we always set arrays, even if empty
+      setJobDetails(Array.isArray(jobDetailsData) ? jobDetailsData : []);
+      setFilteredJobDetails(Array.isArray(jobDetailsData) ? jobDetailsData : []);
+
+      // Only process filters if we have data
+      if (Array.isArray(jobDetailsData) && jobDetailsData.length > 0) {
+        const uniqueCompanies = [...new Set(jobDetailsData.map(item => item.companyName))].filter(Boolean);
+        const uniquePositions = [...new Set(jobDetailsData.map(item => item.position))].filter(Boolean);
+        const uniqueSupportNames = [...new Set(jobDetailsData.map(item => item.createdBy?.name))].filter(Boolean);
+
+        setFilterConfig([
+          {
+            name: 'companyName',
+            label: 'Company',
+            type: 'select',
+            defaultValue: 'all',
+            options: [
+              { value: 'all', label: 'All Companies' },
+              ...uniqueCompanies.map(company => ({
+                value: company,
+                label: company
+              }))
+            ]
+          },
+          {
+            name: 'position',
+            label: 'Position',
+            type: 'select',
+            defaultValue: 'all',
+            options: [
+              { value: 'all', label: 'All Positions' },
+              ...uniquePositions.map(position => ({
+                value: position,
+                label: position
+              }))
+            ]
+          },
+          {
+            name: 'supportName',
+            label: 'Support Name',
+            type: 'select',
+            defaultValue: 'all',
+            options: [
+              { value: 'all', label: 'All Support Staff' },
+              ...uniqueSupportNames.map(name => ({
+                value: name,
+                label: name
+              }))
+            ]
+          },
+          {
+            name: 'feesStatus',
+            label: 'Fees Status',
+            type: 'select',
+            defaultValue: 'all',
+            options: [
+              { value: 'all', label: 'All Statuses' },
+              { value: 'pending', label: 'Pending' },
+              { value: 'partial', label: 'Partial' },
+              { value: 'completed', label: 'Completed' }
+            ]
+          },
+          {
+            name: 'dateOfJoining',
+            label: 'Date of Joining',
+            type: 'dateRange',
+            defaultValue: ''
+          }
+        ]);
+      } else {
+        // Set empty filter config if no data
+        setFilterConfig([]);
+      }
     } catch (error) {
       console.error('Error fetching job details:', error);
-      setError('Failed to fetch job details. Please try again.');
-      toast.error('Failed to fetch job details');
+      const errorMessage = error.response?.data?.message || 'Failed to fetch job details';
+      setError(errorMessage);
+      toast.error(errorMessage);
+      // Ensure we set empty arrays on error
+      setJobDetails([]);
+      setFilteredJobDetails([]);
+      setFilterConfig([]);
     } finally {
       setLoading(false);
     }
@@ -117,8 +203,8 @@ const ConsultantJobDetails = () => {
   // Get user role on component mount
   useEffect(() => {
     const role = localStorage.getItem('role');
-    // Set admin status
-    setIsAdmin(role === 'admin');
+    // Set superAdmin status
+    setIssuperAdmin(role === 'superAdmin');
   }, []);
 
   const formatDate = (dateString) => {
@@ -130,7 +216,7 @@ const ConsultantJobDetails = () => {
     });
   };
 
-  // Combined function to apply both filters and search
+  // Update applyFiltersAndSearch function to include new filters
   const applyFiltersAndSearch = (search = searchQuery, filterOptions = {}) => {
     let filtered = [...jobDetails];
     
@@ -141,7 +227,8 @@ const ConsultantJobDetails = () => {
         detail.fullName?.toLowerCase().includes(searchLower) ||
         detail.email?.toLowerCase().includes(searchLower) ||
         detail.companyName?.toLowerCase().includes(searchLower) ||
-        detail.position?.toLowerCase().includes(searchLower)
+        detail.position?.toLowerCase().includes(searchLower) ||
+        detail.createdBy?.name?.toLowerCase().includes(searchLower)
       );
     }
     
@@ -155,6 +242,16 @@ const ConsultantJobDetails = () => {
       // Filter by position
       if (filterOptions.position && filterOptions.position !== 'all') {
         filtered = filtered.filter(detail => detail.position === filterOptions.position);
+      }
+
+      // Filter by support name
+      if (filterOptions.supportName && filterOptions.supportName !== 'all') {
+        filtered = filtered.filter(detail => detail.createdBy?.name === filterOptions.supportName);
+      }
+
+      // Filter by fees status
+      if (filterOptions.feesStatus && filterOptions.feesStatus !== 'all') {
+        filtered = filtered.filter(detail => detail.feesStatus === filterOptions.feesStatus);
       }
       
       // Filter by date range
@@ -349,7 +446,7 @@ const ConsultantJobDetails = () => {
       
       if (name === 'receivedFees') {
         const newPayment = parseFloat(value) || 0;
-        const totalFees = parseFloat(selectedConsultant.feesInfo?.totalFees || prev.totalFees) || 0;
+        const totalFees = parseFloat(selectedConsultant.feesInfo?.totalFees) || 0;
         const previousReceived = parseFloat(selectedConsultant.feesInfo?.receivedFees) || 0;
         const totalReceived = previousReceived + newPayment;
         
@@ -368,6 +465,88 @@ const ConsultantJobDetails = () => {
       
       return newData;
     });
+  };
+
+  const handleAgreementModalOpen = async (consultant) => {
+    setSelectedConsultant(consultant);
+    try {
+      // Fetch existing agreement if any
+      const response = await Axios.get(`/consultants/${consultant.consultantId}/agreement`);
+      if (response.data) {
+        setAgreementData({
+          agreementDate: response.data.agreementDate || '',
+          emiDate: response.data.emiDate?.toString() || '',
+          emiAmount: response.data.emiAmount || '',
+          remark: response.data.remark || ''
+        });
+      } else {
+        setAgreementData({
+          agreementDate: '',
+          emiDate: '',
+          emiAmount: '',
+          remark: ''
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching agreement:', error);
+      setAgreementData({
+        agreementDate: '',
+        emiDate: '',
+        emiAmount: '',
+        remark: ''
+      });
+    }
+    setShowAgreementModal(true);
+  };
+
+  const handleAgreementSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      const payload = {
+        agreementDate: agreementData.agreementDate,
+        emiDate: parseInt(agreementData.emiDate, 10),
+        emiAmount: parseFloat(agreementData.emiAmount),
+        remark: agreementData.remark
+      };
+
+      const response = await Axios.post(`/consultants/${selectedConsultant.consultantId}/agreement`, payload);
+
+      if (response.data) {
+        const updateConsultantState = (prevDetails) =>
+          prevDetails.map(consultant =>
+            consultant.consultantId === selectedConsultant.consultantId
+              ? {
+                  ...consultant,
+                  isAgreement: true,
+                  ...payload
+                }
+              : consultant
+          );
+
+        setJobDetails(updateConsultantState);
+        setFilteredJobDetails(updateConsultantState);
+        toast.success('Agreement created successfully');
+        setShowAgreementModal(false);
+      }
+    } catch (error) {
+      const errorMessage = error.response?.data?.message || 'Error creating agreement';
+      if (error.response?.data?.errors) {
+        const validationErrors = error.response.data.errors
+          .map(err => `${err.field}: ${err.message}`)
+          .join(', ');
+        toast.error(`Validation error: ${validationErrors}`);
+      } else {
+        toast.error(errorMessage);
+      }
+    }
+  };
+
+  const handleAgreementInputChange = (e) => {
+    const { name, value } = e.target;
+    setAgreementData(prev => ({
+      ...prev,
+      [name]: value
+    }));
   };
 
   // Handle filter application
@@ -434,8 +613,8 @@ const ConsultantJobDetails = () => {
               <th>POSITION</th>
               <th>DATE OF JOINING</th>
               <th>Support Name</th>
-              {isAdmin ? <th>FEES</th> : <th>FEES STATUS</th>}
-              {isAdmin && <th>ACTIONS</th>}
+              {issuperAdmin ? <th>FEES</th> : <th>FEES STATUS</th>}
+              {issuperAdmin && <th>ACTIONS</th>}
             </tr>
           </thead>
           <tbody>
@@ -447,7 +626,7 @@ const ConsultantJobDetails = () => {
                 <td>{detail.position || '----'}</td>
                 <td>{detail.dateOfJoining ? formatDate(detail.dateOfJoining) : '----'}</td>
                 <td>{detail.createdBy?.name || '----'}</td>
-                {isAdmin ? (
+                {issuperAdmin ? (
                   <td>
                     <div className="fees-info">
                       <span className="fee-item total-fee">
@@ -470,16 +649,25 @@ const ConsultantJobDetails = () => {
                     </div>
                   </td>
                 )}
-                {isAdmin && (
+                {issuperAdmin && (
                   <td>
-                    <Button
-                      variant="outline-primary"
-                      size="sm"
-                      onClick={() => handleFeesModalOpen(detail)}
-                      className="fees-btn"
-                    >
-                      <BsCurrencyDollar /> Manage Fees
-                    </Button>
+                    <div className="d-flex gap-2">
+                      <Button
+                        variant="outline-primary"
+                        size="sm"
+                        onClick={() => handleFeesModalOpen(detail)}
+                        className="fees-btn"
+                      >
+                        <BsCurrencyDollar /> Manage Fees
+                      </Button>
+                      <Button
+                        variant={detail.isAgreement ? "outline-success" : "outline-secondary"}
+                        size="sm"
+                        onClick={() => handleAgreementModalOpen(detail)}
+                      >
+                        {detail.isAgreement ? '✓ Agreement' : 'Agreement'}
+                      </Button>
+                    </div>
                   </td>
                 )}
               </tr>
@@ -572,6 +760,76 @@ const ConsultantJobDetails = () => {
               </Button>
               <Button variant="primary" type="submit">
                 {selectedConsultant?.feesInfo?.totalFees !== feesData.totalFees ? 'Update Total Fees' : 'Record Payment'}
+              </Button>
+            </div>
+          </Form>
+        </Modal.Body>
+      </Modal>
+
+      {/* Agreement Management Modal */}
+      <Modal show={showAgreementModal} onHide={() => setShowAgreementModal(false)} centered>
+        <Modal.Header closeButton>
+          <Modal.Title>Manage Agreement Details</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <Form onSubmit={handleAgreementSubmit}>
+            <Form.Group className="mb-3">
+              <Form.Label>Agreement Date</Form.Label>
+              <Form.Control
+                type="date"
+                name="agreementDate"
+                value={agreementData.agreementDate}
+                onChange={handleAgreementInputChange}
+                required
+              />
+            </Form.Group>
+
+            <Form.Group className="mb-3">
+              <Form.Label>EMI Day of Month (1-31)</Form.Label>
+              <Form.Control
+                type="number"
+                name="emiDate"
+                value={agreementData.emiDate}
+                onChange={handleAgreementInputChange}
+                required
+                min="1"
+                max="31"
+                placeholder="Enter EMI day (1-31)"
+              />
+              <Form.Text className="text-muted">
+                Enter the day of month when EMI payment is due
+              </Form.Text>
+            </Form.Group>
+
+            <Form.Group className="mb-3">
+              <Form.Label>Emi Amount</Form.Label>
+              <Form.Control
+                type="number"
+                name="emiAmount"
+                value={agreementData.emiAmount}
+                onChange={handleAgreementInputChange}
+                required
+                min="0"
+                step="0.01"
+              />
+            </Form.Group>
+
+            <Form.Group className="mb-3">
+              <Form.Label>Remark</Form.Label>
+              <Form.Control
+                type="text"
+                name="remark"
+                value={agreementData.remark}
+                onChange={handleAgreementInputChange}
+              />
+            </Form.Group>
+
+            <div className="d-flex justify-content-end gap-2">
+              <Button variant="secondary" onClick={() => setShowAgreementModal(false)}>
+                Cancel
+              </Button>
+              <Button variant="primary" type="submit">
+                Update Agreement
               </Button>
             </div>
           </Form>

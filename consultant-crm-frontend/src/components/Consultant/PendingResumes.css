@@ -1,0 +1,129 @@
+.pending-resumes-container {
+  padding: 20px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.pending-resumes-container h2 {
+  color: #333;
+  margin-bottom: 20px;
+  font-size: 24px;
+}
+
+.resumes-table {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+}
+
+.resumes-table table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.resumes-table th,
+.resumes-table td {
+  padding: 12px 15px;
+  text-align: left;
+  border-bottom: 1px solid #eee;
+}
+
+.resumes-table th {
+  background-color: #f8f9fa;
+  font-weight: 600;
+  color: #495057;
+}
+
+.resumes-table tr:hover {
+  background-color: #f8f9fa;
+}
+
+.actions-cell {
+  display: flex;
+  gap: 8px;
+}
+
+.btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 4px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  border: none;
+}
+
+.btn-view {
+  background: linear-gradient(45deg, #4a90e2, #357abd);
+  color: white;
+}
+
+.btn-accept {
+  background: linear-gradient(45deg, #28a745, #218838);
+  color: white;
+}
+
+.btn-reject {
+  background: linear-gradient(45deg, #dc3545, #c82333);
+  color: white;
+}
+
+.btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.btn:active {
+  transform: translateY(0);
+}
+
+.loading-container,
+.error-container,
+.no-resumes {
+  text-align: center;
+  padding: 40px;
+  font-size: 18px;
+  color: #666;
+}
+
+.error-container {
+  color: #dc3545;
+}
+
+.no-resumes {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  margin-top: 20px;
+}
+
+.status-badge {
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+  text-transform: capitalize;
+}
+
+.status-badge.not_built {
+  background-color: #ffc107;
+  color: #000;
+}
+
+.status-badge.pending {
+  background-color: #17a2b8;
+  color: white;
+}
+
+.status-badge.accepted {
+  background-color: #28a745;
+  color: white;
+}
+
+.status-badge.rejected {
+  background-color: #dc3545;
+  color: white;
+} 

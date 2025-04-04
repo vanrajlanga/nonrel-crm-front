@@ -15,16 +15,61 @@ const SignupForm = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setError(''); // Clear any previous errors
+    
     try {
-      // By default, our backend assigns the role "user" if not specified.
+      console.log('Attempting signup with:', { email: userData.email, username: userData.username });
       const res = await Axios.post('/auth/signup', userData);
+      
+      console.log('Signup response:', res.data); // Log the response for debugging
+      
+      // Check if we have a response and data
+      if (!res.data) {
+        throw new Error('No data received from server');
+      }
+
+      // Extract user data from response
       const { token, role } = res.data;
+      const user = res.data.user || res.data; // Try both locations for user data
+
+      if (!token || !role) {
+        throw new Error('Missing required authentication data');
+      }
+
+      // Get username with fallbacks
+      const username = user.username || userData.username;
+      const email = user.email || userData.email;
+
+      // Store user info in localStorage
       localStorage.setItem('token', token);
       localStorage.setItem('role', role);
-      navigate('/home');
-      window.location.reload();
+      localStorage.setItem('username', username);
+      localStorage.setItem('email', email);
+
+      // Dispatch auth state change event with username
+      const authEvent = new CustomEvent('authStateChange', {
+        detail: { 
+          isLoggedIn: true,
+          username: username,
+          email: email,
+          role: role
+        }
+      });
+      window.dispatchEvent(authEvent);
+
+      navigate('/');
     } catch (err) {
-      setError(err.response?.data?.message || 'Signup failed');
+      console.error('Signup error:', err);
+      console.error('Error response:', err.response?.data);
+      
+      // Set error message from server response
+      if (err.response?.data?.message) {
+        setError(err.response.data.message);
+      } else if (err.message) {
+        setError(err.message);
+      } else {
+        setError('Signup failed. Please try again.');
+      }
     }
   };
 
@@ -32,7 +77,11 @@ const SignupForm = () => {
     <div className="signup-container">
       <div className="signup-form">
         <h2 className="signup-title">Create Account</h2>
-        {error && <p className="error-message">{error}</p>}
+        {error && (
+          <p className="error-message">
+            {error}
+          </p>
+        )}
         <form onSubmit={handleSubmit}>
           <div className="form-group">
             <label>Username:</label>

@@ -8,7 +8,7 @@ const CreateUserModal = ({ onClose, onSave, token }) => {
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [role, setRole] = useState('user');
+  const [role, setRole] = useState('Candidate');
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -27,7 +27,6 @@ const CreateUserModal = ({ onClose, onSave, token }) => {
       alert(error.response?.data?.message || 'Failed to create user');
     }
   };
-
   return (
     <div className="modal">
       <div className="modal-content">
@@ -55,9 +54,11 @@ const CreateUserModal = ({ onClose, onSave, token }) => {
             required
           />
           <select value={role} onChange={(e) => setRole(e.target.value)}>
-            <option value="user">User</option>
-            <option value="team">Team</option>
-            <option value="admin">Admin</option>
+            <option value="Candidate">Candidate</option>
+            <option value="Support">Support</option>
+            <option value="coordinator">Coordinator</option>
+            <option value="resumeBuilder">Resume Builder</option>
+            <option value="superAdmin">Super Admin</option>
           </select>
           <div className="modal-actions">
             <button type="submit">Create</button>
@@ -130,9 +131,11 @@ const EditUserModal = ({ user, onClose, onSave, token }) => {
             placeholder="New Password (optional)"
           />
           <select value={role} onChange={(e) => setRole(e.target.value)}>
-            <option value="user">User</option>
-            <option value="team">Team</option>
-            <option value="admin">Admin</option>
+            <option value="Candidate">Candidate</option>
+            <option value="Support">Support</option>
+            <option value="coordinator">Coordinator</option>
+            <option value="resumeBuilder">Resume Builder</option>
+            <option value="superAdmin">Super Admin</option>
           </select>
           <div className="modal-actions">
             <button type="submit">Save</button>
@@ -173,11 +176,9 @@ const UserManagement = () => {
   const token = localStorage.getItem('token');
   const role = localStorage.getItem('role');
   
-  console.log('Token:', token);
-  console.log('Role:', role);
 
   useEffect(() => {
-    if (!token || role !== 'admin') {
+    if (!token || role !== 'superAdmin') {
       setError('Unauthorized access');
       setLoading(false);
       return;
@@ -194,11 +195,24 @@ const UserManagement = () => {
           'Content-Type': 'application/json'
         },
       };
-      const { data } = await Axios.get('/users', config);
-      setUsers(data);
+      const response = await Axios.get('/users', config);
+      
+      // Check if response.data.users exists (if API returns { users: [...] })
+      // or if response.data itself is the array
+      const userData = response.data?.users || response.data || [];
+      
+      // Ensure it's an array
+      if (!Array.isArray(userData)) {
+        console.warn('API response is not an array:', userData);
+        setUsers([]);
+        return;
+      }
+      
+      setUsers(userData);
     } catch (error) {
       console.error('API Error:', error);
       setError('Failed to fetch users');
+      setUsers([]); // Ensure users is an empty array on error
     } finally {
       setLoading(false);
     }

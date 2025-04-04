@@ -1,7 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { BsPersonCircle, BsEnvelope, BsPhone, BsCash, BsCalendar, BsArrowLeft, BsCheck, BsTrash, BsX } from 'react-icons/bs';
+import { BsPersonCircle, BsEnvelope, BsPhone,BsArrowLeft, BsCheck, BsTrash, BsX, BsEye } from 'react-icons/bs';
+import { BiUndo } from 'react-icons/bi';
 import Axios from '../../services/api';
+import { toast, ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import './SingleConsultant.css';
 
@@ -14,11 +17,11 @@ const Modal = ({ show, onHide, title, children }) => {
       <div className="modal-content" onClick={e => e.stopPropagation()}>
         <div className="modal-header">
           <h5 className="modal-title">{title}</h5>
-          <button type="button" className="close-button" onClick={onHide}>
+          <button type="button" className="btn-close" onClick={onHide} aria-label="Close">
             <BsX />
           </button>
         </div>
-        <div className="modal-body">{children}</div>
+        {children}
       </div>
     </div>
   );
@@ -31,7 +34,18 @@ const SingleConsultant = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [showModal, setShowModal] = useState(false);
-  const [modalType, setModalType] = useState(null);
+  const [showUndoModal, setShowUndoModal] = useState(false);
+  const [undoType, setUndoType] = useState(null); // 'payment' or 'placement'
+  const [jobFormData, setJobFormData] = useState({
+    companyName: '',
+    jobType: '',
+    dateOfJoining: '',
+    totalFees: '',
+    receivedFees: '',
+    isAgreement: false,
+    feesStatus: 'pending'
+  });
+  const [showCancelModal, setShowCancelModal] = useState(false);
 
   useEffect(() => {
     const fetchConsultant = async () => {
@@ -59,11 +73,40 @@ const SingleConsultant = () => {
     return (
       <div className="proof-image-container">
         <h6 className="proof-title">{title}</h6>
-        <img
-          src={imageUrl}
-          alt={title}
-          className="proof-image"
-        />
+        <button
+          className="btn btn-view-proof"
+          onClick={async () => {
+            try {
+              const response = await Axios.get(`/consultants/${id}/proof`, {
+                responseType: 'blob'
+              });
+              
+              // Get the content type from the response
+              const contentType = response.headers['content-type'];
+              
+              // Create a blob URL with the correct content type
+              const url = window.URL.createObjectURL(new Blob([response.data], { type: contentType }));
+              
+              // Open in new tab
+              const newWindow = window.open(url, '_blank');
+              if (!newWindow) {
+                toast.error('Please allow popups to view the proof');
+              }
+            } catch (error) {
+              console.error('Error fetching proof:', error);
+              if (error.response?.status === 403) {
+                toast.error('You are not authorized to view this proof');
+              } else if (error.response?.status === 404) {
+                toast.error('No proof found for this consultant');
+              } else {
+                toast.error('Failed to fetch proof. Please try again.');
+              }
+            }
+          }}
+          title="View Proof"
+        >
+          <BsEye /> View Proof
+        </button>
       </div>
     );
   };
@@ -74,32 +117,118 @@ const SingleConsultant = () => {
     </span>
   );
 
-  const openModal = (type) => {
-    setModalType(type);
-    setShowModal(true);
-  };
 
   const handleVerifyPayment = async () => {
     try {
       await Axios.post(`/consultants/${id}/verify-payment`, { verifybtn: true });
-      setShowModal(false);
       // Refresh consultant data to show updated payment status
       const response = await Axios.get(`/consultants/${id}`);
       setConsultant(response.data);
+      toast.success('Payment verified successfully');
     } catch (err) {
       console.error('Error verifying payment:', err);
-      setError(err.response?.data?.message || 'Failed to verify payment');
+      toast.error(err.response?.data?.message || 'Failed to verify payment');
     }
   };
 
   const handleCancelRegistration = async () => {
     try {
       await Axios.delete(`/consultants/${id}`);
-      setShowModal(false);
+      toast.success('Registration cancelled successfully');
       navigate('/consultants/consultantsDetails');
     } catch (err) {
       console.error('Error canceling registration:', err);
-      setError(err.response?.data?.message || 'Failed to cancel registration');
+      toast.error(err.response?.data?.message || 'Failed to cancel registration');
+    }
+  };
+
+  // Update handleUndoPayment function
+  const handleUndoPayment = async () => {
+    try {
+      await Axios.post(`/consultants/${id}/verify-payment`, {
+        undoPaymentVerification: true
+      });
+      setShowUndoModal(false);
+      // Refresh consultant data
+      const response = await Axios.get(`/consultants/${id}`);
+      setConsultant(response.data);
+      toast.success('Payment verification undone successfully');
+    } catch (err) {
+      console.error('Error undoing payment verification:', err);
+      toast.error(err.response?.data?.message || 'Failed to undo payment verification');
+    }
+  };
+
+  // Add new function for handling undo placement
+  const handleUndoPlacement = async () => {
+    try {
+      await Axios.put(`/consultants/${id}/job-details`, {
+        undoPlacement: true
+      });
+      setShowUndoModal(false);
+      // Refresh consultant data
+      const response = await Axios.get(`/consultants/${id}`);
+      setConsultant(response.data);
+      toast.success('Placement undone successfully');
+    } catch (err) {
+      console.error('Error undoing placement:', err);
+      toast.error(err.response?.data?.message || 'Failed to undo placement');
+    }
+  };
+
+  const openUndoModal = (type) => {
+    setUndoType(type);
+    setShowUndoModal(true);
+  };
+
+  const handleJobSubmit = async (e) => {
+    e.preventDefault();
+    
+    if (!jobFormData.companyName || !jobFormData.jobType || !jobFormData.dateOfJoining) {
+      toast.error('Please fill in all required fields');
+      return;
+    }
+
+    try {
+      console.log('Submitting job details:', jobFormData);
+      
+      const response = await Axios.post(`/consultants/${id}/job-details`, {
+        companyName: jobFormData.companyName,
+        jobType: jobFormData.jobType,
+        dateOfJoining: jobFormData.dateOfJoining,
+        totalFees: jobFormData.totalFees || undefined,
+        receivedFees: jobFormData.receivedFees || undefined,
+        isAgreement: jobFormData.isAgreement,
+        feesStatus: jobFormData.feesStatus
+      });
+
+      console.log('Job details response:', response.data);
+      
+      toast.success('Job details added successfully');
+      setShowModal(false);
+      
+      // Reset form
+      setJobFormData({
+        companyName: '',
+        jobType: '',
+        dateOfJoining: '',
+        totalFees: '',
+        receivedFees: '',
+        isAgreement: false,
+        feesStatus: 'pending'
+      });
+
+      // Refresh consultant data
+      const consultantResponse = await Axios.get(`/consultants/${id}`);
+      setConsultant(consultantResponse.data);
+    } catch (error) {
+      console.error('Error submitting job details:', error.response || error);
+      const errorMessage = error.response?.data?.message || 'Failed to add job details';
+      toast.error(errorMessage);
+      
+      if (error.response?.data?.missingFields) {
+        toast.error(`Missing fields: ${error.response.data.missingFields.join(', ')}`);
+      }
     }
   };
 
@@ -108,6 +237,7 @@ const SingleConsultant = () => {
 
   return (
     <div className="single-consultant-container">
+      <ToastContainer />
       <button className="back-button" onClick={() => navigate('/consultants/consultantsDetails')}>
         <BsArrowLeft /> Back to List
       </button>
@@ -118,17 +248,33 @@ const SingleConsultant = () => {
           <h2>{consultant?.fulllegalname}</h2>
           
           <div className="action-buttons">
+            {consultant?.paymentStatus && (
+              <button 
+                className="btn btn-warning action-btn"
+                onClick={() => openUndoModal('payment')}
+              >
+                <BiUndo /> Undo Payment
+              </button>
+            )}
+            {consultant?.isPlaced && (
+              <button 
+                className="btn btn-warning action-btn"
+                onClick={() => openUndoModal('placement')}
+              >
+                <BiUndo /> Undo Placement
+              </button>
+            )}
             {!consultant?.paymentStatus && (
               <button 
                 className="btn btn-success action-btn"
-                onClick={() => openModal('verify')}
+                onClick={handleVerifyPayment}
               >
                 <BsCheck /> Verify Payment
               </button>
             )}
             <button 
               className="btn btn-danger action-btn"
-              onClick={() => openModal('cancel')}
+              onClick={() => setShowCancelModal(true)}
             >
               <BsTrash /> Cancel Registration
             </button>
@@ -316,29 +462,162 @@ const SingleConsultant = () => {
         </div>
       </div>
 
+      {/* Cancel Registration Modal */}
       <Modal 
-        show={showModal} 
-        onHide={() => setShowModal(false)}
-        title={modalType === 'verify' ? 'Verify Payment' : 'Cancel Registration'}
+        show={showCancelModal} 
+        onHide={() => setShowCancelModal(false)}
+        title="Cancel Registration"
       >
         <div className="modal-body">
-          {modalType === 'verify' 
-            ? 'Are you sure you want to verify this consultant\'s payment?'
-            : 'Are you sure you want to cancel this consultant\'s registration? This action cannot be undone.'}
+          Are you sure you want to cancel this consultant's registration? This action cannot be undone.
         </div>
         <div className="modal-footer">
           <button 
             className="btn btn-secondary" 
-            onClick={() => setShowModal(false)}
+            onClick={() => setShowCancelModal(false)}
           >
             Close
           </button>
           <button 
-            className={`btn ${modalType === 'verify' ? 'btn-success' : 'btn-danger'}`}
-            onClick={modalType === 'verify' ? handleVerifyPayment : handleCancelRegistration}
+            className="btn btn-danger"
+            onClick={handleCancelRegistration}
           >
-            {modalType === 'verify' ? 'Verify' : 'Cancel Registration'}
+            Cancel Registration
           </button>
+        </div>
+      </Modal>
+
+      {/* Undo Modal */}
+      <Modal 
+        show={showUndoModal} 
+        onHide={() => setShowUndoModal(false)}
+        title={`Undo ${undoType === 'payment' ? 'Payment Verification' : 'Placement'}`}
+      >
+        <div className="modal-body">
+          {undoType === 'payment' 
+            ? 'Are you sure you want to undo this consultant\'s payment verification?'
+            : 'Are you sure you want to undo this consultant\'s placement status?'}
+        </div>
+        <div className="modal-footer">
+          <button 
+            className="btn btn-secondary" 
+            onClick={() => setShowUndoModal(false)}
+          >
+            Close
+          </button>
+          <button 
+            className="btn btn-warning"
+            onClick={undoType === 'payment' ? handleUndoPayment : handleUndoPlacement}
+          >
+            Confirm Undo
+          </button>
+        </div>
+      </Modal>
+
+      {/* Job Modal */}
+      <Modal 
+        show={showModal} 
+        onHide={() => setShowModal(false)}
+        title="Add Job Details"
+      >
+        <div className="modal-body">
+          <form onSubmit={handleJobSubmit}>
+            <div className="form-group mb-3">
+              <label>Company Name</label>
+              <input
+                type="text"
+                className="form-control"
+                value={jobFormData.companyName}
+                onChange={(e) => setJobFormData(prev => ({ ...prev, companyName: e.target.value }))}
+                required
+              />
+            </div>
+
+            <div className="form-group mb-3">
+              <label>Job Position</label>
+              <input
+                type="text"
+                className="form-control"
+                value={jobFormData.jobType}
+                onChange={(e) => setJobFormData(prev => ({ ...prev, jobType: e.target.value }))}
+                required
+              />
+            </div>
+
+            <div className="form-group mb-3">
+              <label>Date of Joining</label>
+              <input
+                type="date"
+                className="form-control"
+                value={jobFormData.dateOfJoining}
+                onChange={(e) => setJobFormData(prev => ({ ...prev, dateOfJoining: e.target.value }))}
+                required
+              />
+            </div>
+
+            {localStorage.getItem('role') === 'superAdmin' && (
+              <>
+                <div className="form-group mb-3">
+                  <label>Total Fees</label>
+                  <input
+                    type="number"
+                    className="form-control"
+                    value={jobFormData.totalFees}
+                    onChange={(e) => setJobFormData(prev => ({ ...prev, totalFees: e.target.value }))}
+                  />
+                </div>
+
+                <div className="form-group mb-3">
+                  <label>Received Fees</label>
+                  <input
+                    type="number"
+                    className="form-control"
+                    value={jobFormData.receivedFees}
+                    onChange={(e) => setJobFormData(prev => ({ ...prev, receivedFees: e.target.value }))}
+                  />
+                </div>
+              </>
+            )}
+
+            <div className="form-check mb-3">
+              <input
+                type="checkbox"
+                className="form-check-input"
+                id="isAgreement"
+                checked={jobFormData.isAgreement}
+                onChange={(e) => setJobFormData(prev => ({ ...prev, isAgreement: e.target.checked }))}
+              />
+              <label className="form-check-label" htmlFor="isAgreement">
+                Agreement Completed
+              </label>
+            </div>
+
+            <div className="form-group mb-3">
+              <label>Fees Status</label>
+              <select
+                className="form-select"
+                value={jobFormData.feesStatus}
+                onChange={(e) => setJobFormData(prev => ({ ...prev, feesStatus: e.target.value }))}
+              >
+                <option value="pending">Pending</option>
+                <option value="partial">Partial</option>
+                <option value="completed">Completed</option>
+              </select>
+            </div>
+
+            <div className="modal-footer">
+              <button 
+                type="button" 
+                className="btn btn-secondary"
+                onClick={() => setShowModal(false)}
+              >
+                Close
+              </button>
+              <button type="submit" className="btn btn-primary">
+                Save Job Details
+              </button>
+            </div>
+          </form>
         </div>
       </Modal>
     </div>

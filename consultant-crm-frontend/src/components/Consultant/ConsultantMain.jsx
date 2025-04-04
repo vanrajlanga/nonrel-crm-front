@@ -1,50 +1,66 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import 'bootstrap/dist/css/bootstrap.min.css';
-import { BsPersonFill, BsBuildingsFill, BsPeopleFill,BsFileEarmarkText,BsPersonLinesFill, } from 'react-icons/bs';
+import { BsPersonFill, BsBuildingsFill, BsPeopleFill, BsFileEarmarkText, BsPersonLinesFill } from 'react-icons/bs';
 import { MdOutlineDocumentScanner } from "react-icons/md";
 
 const ConsultantMain = () => {
   const navigate = useNavigate();
+  const [userRole, setUserRole] = useState(null);
+
+  useEffect(() => {
+    const role = localStorage.getItem('role');
+    setUserRole(role);
+  }, []);
 
   const registrationCards = [
     {
       title: 'Users',
       description: 'User Details',
       path: '/consultants/userManagement',
-      icon: <BsPersonFill size={40} className="text-primary" />
+      icon: <BsPersonFill size={40} className="text-primary" />,
+      showForRoles: ['superAdmin']
     },
     {
       title: 'All Registration',
       description: 'View and manage all consultant registrations in one place',
       path: '/consultants/consultantsDetails',
-      icon: <BsBuildingsFill size={40} className="text-primary" />
+      icon: <BsBuildingsFill size={40} className="text-primary" />,
+      showForRoles: ['superAdmin', 'coordinator', 'Support', 'resumeBuilder']
     },
     {
       title: 'Consultants Job Details',
       description: 'Consultants Job Details',
       path: '/consultants/consultantJobDetails',
-      icon: <BsPeopleFill size={40} className="text-primary" />
+      icon: <BsPeopleFill size={40} className="text-primary" />,
+      showForRoles: ['superAdmin', 'coordinator', 'Support']
     },
     {
-      title: 'Consultants Aggrement Details',
-      description: 'Consultants Aggrement Details',
+      title: 'Consultants Agreement Details',
+      description: 'Consultants Agreement Details',
       path: '/consultants/consultantAggrementDetails',
-      icon: <BsFileEarmarkText size={40} className="text-primary" />
+      icon: <BsFileEarmarkText size={40} className="text-primary" />,
+      showForRoles: ['superAdmin']
     },
     {
       title: 'Consultants Interview Details',
       description: 'Consultants Interview Details',
       path: '/consultants/consultantInterviewDetails',
-      icon: <BsPersonLinesFill size={40} className="text-primary" />
+      icon: <BsPersonLinesFill size={40} className="text-primary" />,
+      showForRoles: ['superAdmin', 'coordinator', 'Support']
     },
     {
       title: 'Consultants Resume Builder',
       description: 'Consultants Resume Builder',
       path: '/consultants/consultantResumeBuilder',
-      icon: <MdOutlineDocumentScanner size={40} className="text-primary" />
+      icon: <MdOutlineDocumentScanner size={40} className="text-primary" />,
+      showForRoles: ['superAdmin', 'coordinator', 'resumeBuilder']
     }
   ];
+
+  const filteredCards = registrationCards.filter(card => 
+    card.showForRoles.includes(userRole)
+  );
 
   return (
     <div className="min-vh-100 py-4" style={{ background: 'linear-gradient(120deg, #f0f2f5 0%, #e3f2fd 100%)' }}>
@@ -59,7 +75,7 @@ const ConsultantMain = () => {
         </div>
 
         <div className="row g-4 justify-content-center">
-          {registrationCards.map((card, index) => (
+          {filteredCards.map((card, index) => (
             <div className="col-12 col-sm-6 col-md-4" key={index}>
               <div 
                 className="card h-100 border-0 shadow-sm" 

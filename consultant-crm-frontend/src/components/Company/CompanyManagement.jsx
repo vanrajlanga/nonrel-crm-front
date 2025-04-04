@@ -33,7 +33,7 @@ const CompanyManagement = () => {
     const token = localStorage.getItem('token');
     const role = localStorage.getItem('role');
 
-    if (!token || !role || (role !== 'admin' && role !== 'team')) {
+    if (!token || !role || (role !== 'superAdmin' && role !== 'coordinator' && role !== 'Support')) {
       toast.error('Access forbidden: insufficient privileges');
       navigate('/');
       return;
@@ -46,7 +46,7 @@ const CompanyManagement = () => {
 
   // Load companies on component mount
   useEffect(() => {
-    if (userRole === 'admin' || userRole === 'team') {
+    if (userRole === 'superAdmin' || userRole === 'coordinator' || userRole === 'Support') {
       loadCompanies();
     }
   }, [userRole]);
@@ -80,8 +80,8 @@ const CompanyManagement = () => {
   const handleCompanySubmit = async (e) => {
     e.preventDefault();
     try {
-      if (userRole !== 'admin') {
-        toast.error('Only admin can perform this action');
+      if (userRole !== 'superAdmin') {
+        toast.error('Only superAdmin can perform this action');
         return;
       }
 
@@ -118,8 +118,8 @@ const CompanyManagement = () => {
   const handleJobSubmit = async (e) => {
     e.preventDefault();
     try {
-      if (userRole !== 'admin') {
-        toast.error('Only admin can perform this action');
+      if (userRole !== 'superAdmin') {
+        toast.error('Only superAdmin can perform this action');
         return;
       }
 
@@ -149,8 +149,8 @@ const CompanyManagement = () => {
   };
 
   const handleDeleteCompany = async (companyId) => {
-    if (userRole !== 'admin') {
-      toast.error('Only admin can perform this action');
+    if (userRole !== 'superAdmin') {
+      toast.error('Only superAdmin can perform this action');
       return;
     }
 
@@ -181,8 +181,8 @@ const CompanyManagement = () => {
   };
 
   const handleDeleteJob = async (companyId, jobId) => {
-    if (userRole !== 'admin') {
-      toast.error('Only admin can perform this action');
+    if (userRole !== 'superAdmin') {
+      toast.error('Only superAdmin can perform this action');
       return;
     }
 
@@ -261,7 +261,7 @@ const CompanyManagement = () => {
       
       <div className="header-section">
         <h2 className="title">Company Management</h2>
-        {userRole === 'admin' && (
+        {userRole === 'superAdmin' && (
           <Button 
             variant="primary" 
             className="add-company-btn"
@@ -296,7 +296,7 @@ const CompanyManagement = () => {
                   </div>
                 </Accordion.Header>
                 <Accordion.Body>
-                  {userRole === 'admin' && (
+                  {userRole === 'superAdmin' && (
                     <div className="company-actions mb-3">
                       <Button 
                         variant="outline-primary" 
@@ -336,7 +336,7 @@ const CompanyManagement = () => {
                                     Posted: {new Date(job.createdAt).toLocaleDateString()}
                                   </small>
                                 </div>
-                                {userRole === 'admin' && (
+                                {userRole === 'superAdmin' && (
                                   <Button
                                     variant="outline-danger"
                                     size="sm"

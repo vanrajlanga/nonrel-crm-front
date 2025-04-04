@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Axios from '../../services/api';
 import 'bootstrap/dist/css/bootstrap.min.css';
-import { BsEnvelope, BsPhone, BsCash, BsCheck2Circle, BsChevronLeft, BsChevronRight, BsSearch, BsEye, BsColumns, BsCheck, BsLayoutThreeColumns, BsBriefcase } from 'react-icons/bs';
+import { BsChevronLeft, BsChevronRight, BsEye, BsLayoutThreeColumns, BsBriefcase, BsPeople, BsFileText } from 'react-icons/bs';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import './ConsultantDetails.css';
@@ -10,6 +10,7 @@ import Filter from '../Filter';
 import Modal from 'react-bootstrap/Modal';
 import Form from 'react-bootstrap/Form';
 import Button from 'react-bootstrap/Button';
+import PendingResumes from './PendingResumes';
 
 const ConsultantDetails = () => {
   const navigate = useNavigate();
@@ -41,6 +42,18 @@ const ConsultantDetails = () => {
     jobType: ''
   });
 
+  // Staff Assignment States
+  const [showStaffModal, setShowStaffModal] = useState(false);
+  const [selectedConsultantForStaff, setSelectedConsultantForStaff] = useState(null);
+  const [coordinators, setCoordinators] = useState([]);
+  const [supportStaff, setSupportStaff] = useState([]);
+  const [staffAssignmentData, setStaffAssignmentData] = useState({
+    coordinatorId: '',
+    supportId: ''
+  });
+
+ 
+
   // Get user role on component mount
   useEffect(() => {
     const role = localStorage.getItem('role');
@@ -58,9 +71,20 @@ const ConsultantDetails = () => {
           type: 'select',
           defaultValue: 'all',
           options: [
-            { value: 'all', label: 'All' },
+            { value: 'all', label: 'All Statuses' },
             { value: 'verified', label: 'Verified' },
             { value: 'pending', label: 'Pending' }
+          ]
+        },
+        {
+          name: 'isPlaced',
+          label: 'Placement Status',
+          type: 'select',
+          defaultValue: 'all',
+          options: [
+            { value: 'all', label: 'All' },
+            { value: 'true', label: 'Placed' },
+            { value: 'false', label: 'Not Placed' }
           ]
         },
         {
@@ -85,8 +109,10 @@ const ConsultantDetails = () => {
             .filter(key => 
               !key.startsWith('_') && 
               key !== 'id' && 
-              key !== 'updatedAt'
-            )
+              key !== 'updatedAt' &&
+              key.toLowerCase() !== 'assignedcoordinatorid' &&
+              key.toLowerCase() !== 'assignedsupportid' &&
+              key.toLowerCase() !== 'assignmentdate')
         : [];
 
       // Transform the data to include all fields, even if null
@@ -174,6 +200,14 @@ const ConsultantDetails = () => {
         const isVerified = filterOptions.paymentStatus === 'verified';
         filtered = filtered.filter(consultant => 
           consultant.paymentStatus === isVerified
+        );
+      }
+
+      // Filter by placement status
+      if (filterOptions.isPlaced && filterOptions.isPlaced !== 'all') {
+        const isPlaced = filterOptions.isPlaced === 'true';
+        filtered = filtered.filter(consultant => 
+          consultant.isPlaced === isPlaced
         );
       }
       
@@ -278,7 +312,12 @@ const ConsultantDetails = () => {
     if (consultants.length > 0 && consultants[0]?.fields) {
       const initialColumns = {};
       consultants[0].fields.forEach(field => {
-        initialColumns[field.fieldName] = true;
+        const fieldNameLower = field.fieldName.toLowerCase();
+        if (fieldNameLower !== 'assignedcoordinatorid' && 
+            fieldNameLower !== 'assignedsupportid' &&
+            fieldNameLower !== 'assignmentdate') {
+          initialColumns[field.fieldName] = true;
+        }
       });
       setVisibleColumns(initialColumns);
     }
@@ -422,6 +461,162 @@ const ConsultantDetails = () => {
     }
   };
 
+  // Add this function to fetch coordinators and support staff
+  const fetchStaffMembers = async () => {
+    try {
+      // Initialize as empty arrays
+      setCoordinators([]);
+      setSupportStaff([]);
+
+      // Fetch users with coordinator role
+      const coordinatorsResponse = await Axios.get('/users?role=coordinator');
+      if (coordinatorsResponse.data?.users && Array.isArray(coordinatorsResponse.data.users)) {
+        setCoordinators(coordinatorsResponse.data.users);
+      } else {
+        console.warn('Coordinators response is not in expected format:', coordinatorsResponse.data);
+        setCoordinators([]);
+      }
+
+      // Fetch users with support role
+      const supportResponse = await Axios.get('/users?role=Support');
+      if (supportResponse.data?.users && Array.isArray(supportResponse.data.users)) {
+        setSupportStaff(supportResponse.data.users);
+      } else {
+        console.warn('Support staff response is not in expected format:', supportResponse.data);
+        setSupportStaff([]);
+      }
+    } catch (error) {
+      console.error('Error fetching staff members:', error);
+      toast.error('Failed to load staff members');
+      // Ensure state is set to empty arrays on error
+      setCoordinators([]);
+      setSupportStaff([]);
+    }
+  };
+
+  // Add staff assignment handler
+  const handleStaffAssignment = async (e) => {
+    e.preventDefault();
+    try {
+      const response = await Axios.post(`/consultants/${selectedConsultantForStaff}/assign-staff`, staffAssignmentData);
+      
+      if (response.data) {
+        toast.success('Staff assigned successfully');
+        setShowStaffModal(false);
+        loadConsultants(); // Refresh the consultant list
+      }
+    } catch (error) {
+      console.error('Error assigning staff:', error);
+      toast.error(error.response?.data?.message || 'Failed to assign staff');
+    }
+  };
+
+  const handleStaffModalOpen = async (consultantId) => {
+    setSelectedConsultantForStaff(consultantId);
+    await fetchStaffMembers();
+    setShowStaffModal(true);
+  };
+
+  // Update handleAssignResumeBuilder and handleDisassignResumeBuilder
+  const handleAssignResumeBuilder = async (consultantId) => {
+    try {
+      const response = await Axios.post(`/consultants/${consultantId}/assign-resume-builder`);
+      
+      if (response.data) {
+        // Update the specific consultant's state
+        setConsultants(prevConsultants => 
+          prevConsultants.map(consultant => 
+            consultant.id === consultantId 
+              ? { ...consultant, assignedResumeBuilder: true }
+              : consultant
+          )
+        );
+        setFilteredConsultants(prevFiltered => 
+          prevFiltered.map(consultant => 
+            consultant.id === consultantId 
+              ? { ...consultant, assignedResumeBuilder: true }
+              : consultant
+          )
+        );
+        toast.success('Assigned as resume builder successfully');
+      }
+    } catch (error) {
+      console.error('Error assigning resume builder:', error);
+      toast.error(error.response?.data?.message || 'Failed to assign resume builder');
+    }
+  };
+
+  const handleDisassignResumeBuilder = async (consultantId) => {
+    try {
+      const response = await Axios.post(`/consultants/${consultantId}/disassign-resume-builder`);
+      
+      if (response.data) {
+        // Update the specific consultant's state
+        setConsultants(prevConsultants => 
+          prevConsultants.map(consultant => 
+            consultant.id === consultantId 
+              ? { ...consultant, assignedResumeBuilder: false }
+              : consultant
+          )
+        );
+        setFilteredConsultants(prevFiltered => 
+          prevFiltered.map(consultant => 
+            consultant.id === consultantId 
+              ? { ...consultant, assignedResumeBuilder: false }
+              : consultant
+          )
+        );
+        toast.success('Disassigned as resume builder successfully');
+      }
+    } catch (error) {
+      console.error('Error disassigning resume builder:', error);
+      toast.error(error.response?.data?.message || 'Failed to disassign resume builder');
+    }
+  };
+
+  // Update handleUploadResume function
+  const handleUploadResume = async (consultantId) => {
+    try {
+      // Create a file input element
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = '.pdf'; // Only accept PDF files
+      
+      input.onchange = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        // Check if file is PDF
+        if (file.type !== 'application/pdf') {
+          toast.error('Please upload a PDF file');
+          return;
+        }
+
+        // Create form data
+        const formData = new FormData();
+        formData.append('resume', file);
+
+        // Upload the file
+        const response = await Axios.post(`/consultants/${consultantId}/upload-resume`, formData, {
+          headers: {
+            'Content-Type': 'multipart/form-data'
+          }
+        });
+
+        if (response.data) {
+          toast.success('Resume uploaded successfully');
+          loadConsultants(); // Refresh the consultant list
+        }
+      };
+
+      // Trigger file selection
+      input.click();
+    } catch (error) {
+      console.error('Error uploading resume:', error);
+      toast.error(error.response?.data?.message || 'Failed to upload resume');
+    }
+  };
+
   return (
     <div className="container">
       <ToastContainer />
@@ -433,6 +628,12 @@ const ConsultantDetails = () => {
           View and manage consultant information
         </p>
       </div>
+
+      {userRole === 'superAdmin' && (
+        <div className="mb-4">
+          <PendingResumes />
+        </div>
+      )}
 
       {loading && (
         <div className="text-center p-5">
@@ -454,10 +655,8 @@ const ConsultantDetails = () => {
             onFilterApplied={handleFilterApplied}
             filterConfig={filterConfig}
             onSearch={handleSearchChange}
-            searchPlaceholder="Search by full name..."
+            searchPlaceholder="Search consultants..."
           />
-
-          {/* Column visibility toggle */}
           <div className="column-toggle-container" ref={columnToggleRef}>
             <button
               className="column-visibility-btn"
@@ -509,9 +708,9 @@ const ConsultantDetails = () => {
 
       <div className="d-flex justify-content-between align-items-center mb-3">
         <div className="items-per-page-selector">
-          <label className="me-2">Show:</label>
+          <label>Show:</label>
           <select 
-            className="form-select form-select-sm d-inline-block w-auto"
+            className="form-select form-select-sm"
             value={itemsPerPage}
             onChange={handleItemsPerPageChange}
           >
@@ -519,21 +718,21 @@ const ConsultantDetails = () => {
               <option key={option} value={option}>{option}</option>
             ))}
           </select>
-          <span className="ms-2">entries</span>
+          <span>entries</span>
         </div>
         <span className="text-muted">Total: {filteredConsultants.length} consultants</span>
       </div>
 
       <div className="table-responsive">
         <table className="table consultant-table">
-          <thead className="table-dark">
+          <thead>
             <tr>
               <th className="header-cell">Actions</th>
               {consultants[0]?.fields
                 .filter(field => visibleColumns[field.fieldName])
                 .map((field, index) => (
-                  <th key={index} className="header-cell text-uppercase">
-                    {field.fieldName}
+                  <th key={index} className="header-cell">
+                    {field.fieldName.toUpperCase()}
                   </th>
               ))}
             </tr>
@@ -541,32 +740,71 @@ const ConsultantDetails = () => {
           <tbody>
             {currentConsultants.map((consultant) => (
               <tr key={consultant.id} className="consultant-row">
-                {(userRole === 'admin' || userRole === 'team') && (
-                  <td className="data-cell">
-                    <div className="d-flex gap-2">
-                      {userRole === 'admin' && (
-                        <button
-                          className="btn btn-primary btn-sm"
-                          onClick={() => handleConsultantClick(consultant.id)}
-                        >
-                          <BsEye /> View
-                        </button>
-                      )}
-                      {consultant.isPlaced ? (
+                <td className="data-cell">
+                  <div className="action-buttons">
+                    {(userRole === 'superAdmin') && (
+                      <button
+                        className="btn btn-view"
+                        onClick={() => handleConsultantClick(consultant.id)}
+                      >
+                        <BsEye /> View
+                      </button>
+                    )}
+                    {userRole === 'superAdmin' && (
+                      consultant.isPlaced ? (
                         <span className="badge placement-success">
                           <BsBriefcase /> Placed
                         </span>
                       ) : (
                         <button
-                          className="btn btn-success btn-sm"
+                          className="btn btn-job"
                           onClick={() => handleJobModalOpen(consultant.id)}
                         >
                           <BsBriefcase /> Job
                         </button>
-                      )}
-                    </div>
-                  </td>
-                )}
+                      )
+                    )}
+                    {userRole === 'superAdmin' && (
+                      <button
+                        className="btn btn-staff"
+                        onClick={() => handleStaffModalOpen(consultant.id)}
+                        title="Assign Staff"
+                      >
+                        <BsPeople /> Staff
+                      </button>
+                    )}
+                    {userRole === 'resumeBuilder' && (
+                      <>
+                        {consultant.assignedResumeBuilder ? (
+                          <button
+                            className="btn btn-disassign-me"
+                            onClick={() => handleDisassignResumeBuilder(consultant.id)}
+                            title="Disassign ME"
+                          >
+                            <BsFileText /> Disassign ME
+                          </button>
+                        ) : (
+                          <button
+                            className="btn btn-assign-me"
+                            onClick={() => handleAssignResumeBuilder(consultant.id)}
+                            title="Assign ME"
+                          >
+                            <BsFileText /> Assign ME
+                          </button>
+                        )}
+                        {consultant.assignedResumeBuilder && (
+                          <button
+                            className="btn btn-upload-resume"
+                            onClick={() => handleUploadResume(consultant.id)}
+                            title="Upload Resume"
+                          >
+                            <BsFileText /> Upload
+                          </button>
+                        )}
+                      </>
+                    )}
+                  </div>
+                </td>
                 {consultant.fields
                   .filter(field => visibleColumns[field.fieldName])
                   .map((field, index) => (
@@ -575,6 +813,44 @@ const ConsultantDetails = () => {
                         <span className={`badge ${field.value ? 'payment-verified' : 'payment-pending'}`}>
                           {field.value ? 'Verified' : 'Pending'}
                         </span>
+                      ) : field.fieldName.toLowerCase() === 'resumestatus' ? (
+                        <span className={`badge ${field.value?.toLowerCase() === 'accepted' ? 'resume-accepted' : 
+                                          field.value?.toLowerCase() === 'rejected' ? 'resume-rejected' : 
+                                          'resume-not-built'}`}>
+                          {field.value?.replace('_', ' ')}
+                        </span>
+                      ) : field.fieldName.toLowerCase() === 'resumefile' ? (
+                        field.value ? (
+                          <button
+                            className="btn btn-view-resume"
+                            onClick={async () => {
+                              try {
+                                const response = await Axios.get(`/consultants/${consultant.id}/resume`, {
+                                  responseType: 'blob'
+                                });
+                                
+                                const url = window.URL.createObjectURL(new Blob([response.data], { type: 'application/pdf' }));
+                                const newWindow = window.open(url, '_blank');
+                                if (!newWindow) {
+                                  toast.error('Please allow popups to view the resume');
+                                }
+                              } catch (error) {
+                                console.error('Error fetching resume:', error);
+                                if (error.response?.status === 403) {
+                                  toast.error('You are not authorized to view this resume');
+                                } else if (error.response?.status === 404) {
+                                  toast.error('No resume found for this consultant');
+                                } else {
+                                  toast.error('Failed to fetch resume. Please try again.');
+                                }
+                              }
+                            }}
+                          >
+                            <BsEye /> View Resume
+                          </button>
+                        ) : (
+                          <span className="text-muted">No resume uploaded</span>
+                        )
                       ) : typeof field.value === 'boolean' ? (
                         <span className={`badge ${field.value ? 'bg-success' : 'bg-secondary'}`}>
                           {field.value ? 'Yes' : 'No'}
@@ -583,8 +859,10 @@ const ConsultantDetails = () => {
                         <span className="text-muted">----</span>
                       ) : field.fieldName.toLowerCase().includes('date') ? (
                         formatDate(field.value)
+                      ) : typeof field.value === 'object' && field.value !== null ? (
+                        field.value.username || field.value.name || JSON.stringify(field.value)
                       ) : (
-                        field.value
+                        String(field.value)
                       )}
                     </td>
                 ))}
@@ -593,8 +871,8 @@ const ConsultantDetails = () => {
             
             {currentConsultants.length === 0 && (
               <tr>
-                <td colSpan={consultants[0]?.fields.length} className="text-center py-4">
-                  <p className="text-muted mb-0">No consultants found matching your criteria.</p>
+                <td colSpan={(consultants[0]?.fields?.filter(field => visibleColumns[field.fieldName])?.length || 0) + 1} className="text-center py-4">
+                  <p className="no-data-message">No consultants found matching your criteria.</p>
                 </td>
               </tr>
             )}
@@ -708,6 +986,61 @@ const ConsultantDetails = () => {
               </Button>
               <Button variant="primary" type="submit">
                 Save Job Details
+              </Button>
+            </div>
+          </Form>
+        </Modal.Body>
+      </Modal>
+
+      {/* Add Staff Assignment Modal */}
+      <Modal show={showStaffModal} onHide={() => setShowStaffModal(false)} centered>
+        <Modal.Header closeButton>
+          <Modal.Title>Assign Staff Members</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <Form onSubmit={handleStaffAssignment}>
+            <Form.Group className="mb-3">
+              <Form.Label>Coordinator</Form.Label>
+              <Form.Select
+                value={staffAssignmentData.coordinatorId}
+                onChange={(e) => setStaffAssignmentData(prev => ({
+                  ...prev,
+                  coordinatorId: e.target.value
+                }))}
+              >
+                <option value="">Select Coordinator</option>
+                {coordinators.map(coordinator => (
+                  <option key={coordinator.id} value={coordinator.id}>
+                    {coordinator.username} ({coordinator.email})
+                  </option>
+                ))}
+              </Form.Select>
+            </Form.Group>
+
+            <Form.Group className="mb-3">
+              <Form.Label>Support Staff</Form.Label>
+              <Form.Select
+                value={staffAssignmentData.supportId}
+                onChange={(e) => setStaffAssignmentData(prev => ({
+                  ...prev,
+                  supportId: e.target.value
+                }))}
+              >
+                <option value="">Select Support Staff</option>
+                {supportStaff.map(support => (
+                  <option key={support.id} value={support.id}>
+                    {support.username} ({support.email})
+                  </option>
+                ))}
+              </Form.Select>
+            </Form.Group>
+
+            <div className="d-flex justify-content-end gap-2">
+              <Button variant="secondary" onClick={() => setShowStaffModal(false)}>
+                Cancel
+              </Button>
+              <Button variant="primary" type="submit">
+                Assign Staff
               </Button>
             </div>
           </Form>
