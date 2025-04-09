@@ -5,6 +5,7 @@ import 'react-toastify/dist/ReactToastify.css';
 import { BsChevronLeft, BsChevronRight } from 'react-icons/bs';
 import Filter from '../Filter';
 import './ConsultantJobDetails.css';
+import { Button, Modal, Form } from 'react-bootstrap';
 
 const ConsultantAgreementDetails = () => {
   const [agreements, setAgreements] = useState([]);
@@ -20,39 +21,80 @@ const ConsultantAgreementDetails = () => {
 
   const [filterConfig, setFilterConfig] = useState([]);
 
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [showJobLostModal, setShowJobLostModal] = useState(false);
+  const [selectedAgreement, setSelectedAgreement] = useState(null);
+  const [paymentData, setPaymentData] = useState({
+    month: '',
+    amount: '',
+    receivedDate: '',
+    notes: ''
+  });
+  const [jobLostDate, setJobLostDate] = useState('');
+
   const loadAgreements = async () => {
     try {
       setLoading(true);
       setError(null);
       
-      // Get all consultants first
-      const consultantsResponse = await Axios.get('/consultants');
-      const consultants = consultantsResponse.data;
-      
-      // Fetch agreements for all consultants
-      const agreementPromises = consultants.map(consultant =>
-        Axios.get(`/consultants/${consultant.id}/agreement`)
-          .then(response => ({
-            ...response.data.agreement,
-            consultantId: consultant.id
-          }))
-          .catch(error => {
-            if (error.response?.status !== 404) {
-              console.error(`Error fetching agreement for consultant ${consultant.id}:`, error);
-            }
-            return null;
-          })
-      );
+      const response = await Axios.get('/agreement-details');
+      const agreementsData = response.data;
 
-      const results = await Promise.all(agreementPromises);
-      const validResults = results.filter(result => result !== null);
+      // Map the data to ensure consistent structure
+      const formattedAgreements = agreementsData.map(agreement => ({
+        id: agreement.id,
+        consultantName: agreement.consultantName,
+        email: agreement.email,
+        phone: agreement.phone,
+        companyName: agreement.ConsultantJobDetail?.companyName,
+        jobTitle: agreement.ConsultantJobDetail?.jobType,
+        jobStartDate: agreement.jobStartDate,
+        totalSalary: agreement.totalSalary,
+        totalServiceFee: agreement.totalServiceFee,
+        monthlyPaymentAmount: agreement.monthlyPaymentAmount,
+        emiDate: agreement.emiDate,
+        remarks: agreement.remarks,
+        nextDueDate: agreement.nextDueDate,
+        totalPaidSoFar: agreement.totalPaidSoFar,
+        remainingBalance: agreement.remainingBalance,
+        jobLostDate: agreement.jobLostDate,
+        paymentCompletionStatus: agreement.paymentCompletionStatus,
+        consultantJobDetailsId: agreement.consultantJobDetailsId,
+        createdBy: agreement.createdBy,
+        // Include all month details
+        ...Object.fromEntries(
+          Array.from({ length: 8 }, (_, i) => i + 1).map(month => [
+            `month${month}DueDate`, agreement[`month${month}DueDate`]
+          ])
+        ),
+        ...Object.fromEntries(
+          Array.from({ length: 8 }, (_, i) => i + 1).map(month => [
+            `month${month}AmountReceived`, agreement[`month${month}AmountReceived`]
+          ])
+        ),
+        ...Object.fromEntries(
+          Array.from({ length: 8 }, (_, i) => i + 1).map(month => [
+            `month${month}ReceivedDate`, agreement[`month${month}ReceivedDate`]
+          ])
+        ),
+        ...Object.fromEntries(
+          Array.from({ length: 8 }, (_, i) => i + 1).map(month => [
+            `month${month}Status`, agreement[`month${month}Status`]
+          ])
+        ),
+        ...Object.fromEntries(
+          Array.from({ length: 8 }, (_, i) => i + 1).map(month => [
+            `month${month}Notes`, agreement[`month${month}Notes`]
+          ])
+        )
+      }));
       
-      setAgreements(validResults);
-      setFilteredAgreements(validResults);
+      setAgreements(formattedAgreements);
+      setFilteredAgreements(formattedAgreements);
 
       // Update filter configuration with unique companies and positions
-      const uniqueCompanies = [...new Set(validResults.map(item => item.companyName))].filter(Boolean);
-      const uniquePositions = [...new Set(validResults.map(item => item.jobTitle))].filter(Boolean);
+      const uniqueCompanies = [...new Set(formattedAgreements.map(item => item.companyName))].filter(Boolean);
+      const uniquePositions = [...new Set(formattedAgreements.map(item => item.jobTitle))].filter(Boolean);
 
       setFilterConfig([
         {
@@ -80,6 +122,18 @@ const ConsultantAgreementDetails = () => {
               label: position
             }))
           ]
+        },
+        {
+          name: 'paymentCompletionStatus',
+          label: 'Payment Status',
+          type: 'select',
+          defaultValue: 'all',
+          options: [
+            { value: 'all', label: 'All Statuses' },
+            { value: 'in_progress', label: 'In Progress' },
+            { value: 'completed', label: 'Completed' },
+            { value: 'terminated', label: 'Terminated' }
+          ]
         }
       ]);
     } catch (error) {
@@ -102,6 +156,25 @@ const ConsultantAgreementDetails = () => {
       month: 'short',
       day: 'numeric'
     });
+  };
+
+  const getStatusBadgeColor = (status) => {
+    switch (status?.toLowerCase()) {
+      case 'paid':
+        return 'success';
+      case 'pending':
+        return 'warning';
+      case 'overdue':
+        return 'danger';
+      case 'in_progress':
+        return 'info';
+      case 'completed':
+        return 'success';
+      case 'terminated':
+        return 'danger';
+      default:
+        return 'secondary';
+    }
   };
 
   // Combined function to apply both filters and search
@@ -202,12 +275,81 @@ const ConsultantAgreementDetails = () => {
     applyFiltersAndSearch(searchQuery, filterOptions);
   };
 
+  const handlePaymentUpdate = async (e) => {
+    e.preventDefault();
+    try {
+      const response = await Axios.put(`/agreement-details/${selectedAgreement.id}/payment`, {
+        monthNumber: parseInt(paymentData.month),
+        amountReceived: parseFloat(paymentData.amount),
+        receivedDate: paymentData.receivedDate,
+        notes: paymentData.notes
+      });
+
+      if (response.data) {
+        // Update the local state
+        const updatedAgreements = agreements.map(agreement => {
+          if (agreement.id === selectedAgreement.id) {
+            return {
+              ...agreement,
+              [`month${paymentData.month}AmountReceived`]: parseFloat(paymentData.amount),
+              [`month${paymentData.month}ReceivedDate`]: paymentData.receivedDate,
+              [`month${paymentData.month}Notes`]: paymentData.notes,
+              [`month${paymentData.month}Status`]: 'paid',
+              totalPaidSoFar: agreement.totalPaidSoFar + parseFloat(paymentData.amount),
+              remainingBalance: agreement.remainingBalance - parseFloat(paymentData.amount)
+            };
+          }
+          return agreement;
+        });
+
+        setAgreements(updatedAgreements);
+        setFilteredAgreements(updatedAgreements);
+        setShowPaymentModal(false);
+        toast.success('Payment updated successfully');
+      }
+    } catch (error) {
+      console.error('Error updating payment:', error);
+      toast.error(error.response?.data?.message || 'Error updating payment');
+    }
+  };
+
+  const handleJobLostUpdate = async (e) => {
+    e.preventDefault();
+    try {
+      const response = await Axios.put(`/agreement-details/${selectedAgreement.id}/job-lost`, {
+        jobLostDate: jobLostDate
+      });
+
+      if (response.data) {
+        // Update the local state
+        const updatedAgreements = agreements.map(agreement => {
+          if (agreement.id === selectedAgreement.id) {
+            return {
+              ...agreement,
+              jobLostDate: jobLostDate,
+              paymentCompletionStatus: 'terminated'
+            };
+          }
+          return agreement;
+        });
+
+        setAgreements(updatedAgreements);
+        setFilteredAgreements(updatedAgreements);
+        setShowJobLostModal(false);
+        toast.success('Job lost date updated successfully');
+      }
+    } catch (error) {
+      console.error('Error updating job lost date:', error);
+      toast.error(error.response?.data?.message || 'Error updating job lost date');
+    }
+  };
+
   return (
     <div className="container">
       <ToastContainer />
       <div className="consultant-header text-center">
         <h2 className="display-6 fw-bold mb-3">
-          Consultant Agreement Details
+            Placement Fee
         </h2>
         <p className="mb-0">
           View all consultant agreements
@@ -255,45 +397,101 @@ const ConsultantAgreementDetails = () => {
         <table className="table consultant-table">
           <thead className="table-dark">
             <tr>
-              <th>CONSULTANT NAME</th>
-              <th>COMPANY NAME</th>
-              <th>POSITION</th>
-              <th>AGREEMENT DATE</th>
-              <th>EMI DAY</th>
-              <th>EMI AMOUNT</th>
-              <th>REMARKS</th>
+              <th>Consultant Name</th>
+              <th>Email</th>
+              <th>Phone</th>
+              <th>Job Start Date</th>
+              <th>Total Salary</th>
+              <th>Total Service Fee (20%)</th>
+              <th>Monthly Payment Amount</th>
+              {Array.from({ length: 8 }, (_, i) => i + 1).map(month => (
+                <React.Fragment key={month}>
+                  <th>Month {month} Due Date</th>
+                  <th>Month {month} Payment Received</th>
+                  <th>Month {month} Payment Received Date</th>
+                  <th>Month {month} Payment Status</th>
+                  <th>Month {month} Notes</th>
+                  <th>Month {month} Action</th>
+                </React.Fragment>
+              ))}
+              <th>Next Due Date</th>
+              <th>Total Paid So Far</th>
+              <th>Remaining Balance</th>
+              <th>Job Lost Date</th>
+              <th>Payment Completion Status</th>
+              <th>Actions</th>
             </tr>
           </thead>
           <tbody>
             {currentItems.map((agreement, index) => (
               <tr key={index} className="consultant-row">
                 <td>{agreement.consultantName || '----'}</td>
-                <td>{agreement.companyName || '----'}</td>
-                <td>{agreement.jobTitle || '----'}</td>
-                <td>{agreement.agreementDate ? formatDate(agreement.agreementDate) : '----'}</td>
+                <td>{agreement.email || '----'}</td>
+                <td>{agreement.phone || '----'}</td>
+                <td>{agreement.jobStartDate ? formatDate(agreement.jobStartDate) : '----'}</td>
+                <td>${agreement.totalSalary?.toLocaleString() || '0'}</td>
+                <td>${agreement.totalServiceFee?.toLocaleString() || '0'}</td>
+                <td>${agreement.monthlyPaymentAmount?.toLocaleString() || '0'}</td>
+                {Array.from({ length: 8 }, (_, i) => i + 1).map(month => (
+                  <React.Fragment key={month}>
+                    <td>{agreement[`month${month}DueDate`] ? formatDate(agreement[`month${month}DueDate`]) : '----'}</td>
+                    <td>${agreement[`month${month}AmountReceived`]?.toLocaleString() || '0'}</td>
+                    <td>{agreement[`month${month}ReceivedDate`] ? formatDate(agreement[`month${month}ReceivedDate`]) : '----'}</td>
+                    <td>
+                      <span className={`badge rounded-pill bg-${getStatusBadgeColor(agreement[`month${month}Status`])} p-2`}>
+                        {agreement[`month${month}Status`]?.toUpperCase() || 'PENDING'}
+                      </span>
+                    </td>
+                    <td>{agreement[`month${month}Notes`] || '----'}</td>
+                    <td>
+                      <Button
+                        variant="outline-primary"
+                        size="sm"
+                        onClick={() => {
+                          setSelectedAgreement(agreement);
+                          setPaymentData({
+                            ...paymentData,
+                            month: month.toString()
+                          });
+                          setShowPaymentModal(true);
+                        }}
+                        disabled={agreement[`month${month}Status`] === 'paid'}
+                        className="btn-sm"
+                      >
+                        Update Payment
+                      </Button>
+                    </td>
+                  </React.Fragment>
+                ))}
+                <td>{agreement.nextDueDate ? formatDate(agreement.nextDueDate) : '----'}</td>
+                <td>${agreement.totalPaidSoFar?.toLocaleString() || '0'}</td>
+                <td>${agreement.remainingBalance?.toLocaleString() || '0'}</td>
+                <td>{agreement.jobLostDate ? formatDate(agreement.jobLostDate) : '----'}</td>
                 <td>
-                  <div className="emi-info">
-                    <span className="emi-item emi-date">
-                      {agreement.emiDate || '----'}
-                    </span>
-                  </div>
+                  <span className={`badge rounded-pill bg-${getStatusBadgeColor(agreement.paymentCompletionStatus)} p-2`}>
+                    {agreement.paymentCompletionStatus?.replace('_', ' ').toUpperCase() || '----'}
+                  </span>
                 </td>
                 <td>
-                  <div className="emi-info">
-                    <span className="emi-item emi-amount">
-                      ${agreement.emiAmount?.toLocaleString() || '0'}
-                    </span>
+                  <div className="d-flex gap-2">
+                    <Button
+                      variant="outline-danger"
+                      size="sm"
+                      onClick={() => {
+                        setSelectedAgreement(agreement);
+                        setShowJobLostModal(true);
+                      }}
+                    >
+                      Mark Job Lost
+                    </Button>
                   </div>
-                </td>
-                <td style={{ maxWidth: '200px' }} className="text-truncate">
-                  {agreement.remarks || '----'}
                 </td>
               </tr>
             ))}
             
             {currentItems.length === 0 && (
               <tr>
-                <td colSpan={7} className="text-center py-4">
+                <td colSpan={13} className="text-center py-4">
                   <p className="text-muted mb-0">No agreements found matching your criteria.</p>
                 </td>
               </tr>
@@ -301,6 +499,72 @@ const ConsultantAgreementDetails = () => {
           </tbody>
         </table>
       </div>
+
+      {/* Payment Update Modal */}
+      <Modal show={showPaymentModal} onHide={() => setShowPaymentModal(false)}>
+        <Modal.Header closeButton>
+          <Modal.Title>Update Payment for Month {paymentData.month}</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <Form onSubmit={handlePaymentUpdate}>
+            <Form.Group className="mb-3">
+              <Form.Label>Amount Received</Form.Label>
+              <Form.Control
+                type="number"
+                value={paymentData.amount}
+                onChange={(e) => setPaymentData({ ...paymentData, amount: e.target.value })}
+                required
+                min="0"
+                step="0.01"
+              />
+            </Form.Group>
+            <Form.Group className="mb-3">
+              <Form.Label>Received Date</Form.Label>
+              <Form.Control
+                type="date"
+                value={paymentData.receivedDate}
+                onChange={(e) => setPaymentData({ ...paymentData, receivedDate: e.target.value })}
+                required
+              />
+            </Form.Group>
+            <Form.Group className="mb-3">
+              <Form.Label>Notes</Form.Label>
+              <Form.Control
+                as="textarea"
+                value={paymentData.notes}
+                onChange={(e) => setPaymentData({ ...paymentData, notes: e.target.value })}
+                placeholder="Enter payment notes (e.g., payment method, reference number)"
+              />
+            </Form.Group>
+            <Button variant="primary" type="submit">
+              Update Payment
+            </Button>
+          </Form>
+        </Modal.Body>
+      </Modal>
+
+      {/* Job Lost Modal */}
+      <Modal show={showJobLostModal} onHide={() => setShowJobLostModal(false)}>
+        <Modal.Header closeButton>
+          <Modal.Title>Mark Job Lost</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <Form onSubmit={handleJobLostUpdate}>
+            <Form.Group className="mb-3">
+              <Form.Label>Job Lost Date</Form.Label>
+              <Form.Control
+                type="date"
+                value={jobLostDate}
+                onChange={(e) => setJobLostDate(e.target.value)}
+                required
+              />
+            </Form.Group>
+            <Button variant="danger" type="submit">
+              Mark Job Lost
+            </Button>
+          </Form>
+        </Modal.Body>
+      </Modal>
 
       {/* Pagination */}
       {filteredAgreements.length > 0 && (

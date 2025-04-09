@@ -33,7 +33,7 @@ const CompanyManagement = () => {
     const token = localStorage.getItem('token');
     const role = localStorage.getItem('role');
 
-    if (!token || !role || (role !== 'superAdmin' && role !== 'coordinator' && role !== 'Support')) {
+    if (!token || !role || (role !== 'superAdmin' && role !== 'coordinator' && role !== 'teamLead')) {
       toast.error('Access forbidden: insufficient privileges');
       navigate('/');
       return;
@@ -46,7 +46,7 @@ const CompanyManagement = () => {
 
   // Load companies on component mount
   useEffect(() => {
-    if (userRole === 'superAdmin' || userRole === 'coordinator' || userRole === 'Support') {
+    if (userRole === 'superAdmin' || userRole === 'coordinator' || userRole === 'teamLead') {
       loadCompanies();
     }
   }, [userRole]);

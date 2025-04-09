@@ -29,8 +29,11 @@
 }
 
 .profile-header {
-  text-align: center;
-  margin-bottom: 2rem;
+  text-align: center !important;
+  margin-bottom: 2rem !important;
+  display: inherit !important;
+      align-items: normal !important;
+      gap: 0px;
 }
 
 .profile-image {
@@ -188,11 +191,11 @@
 }
 
 .action-buttons {
-  display: flex;
-  gap: 12px;
-  flex-wrap: wrap;
-  justify-content: center;
-  margin-top: 1.5rem;
+  display: flex !important;
+  gap: 12px !important;
+  flex-wrap: wrap !important;
+  justify-content: center !important;
+  margin-top: 1.5rem !important;
 }
 
 .action-btn {
@@ -285,7 +288,7 @@
   font-weight: 600;
 }
 
-.btn-close {
+.btn-close-single-consultant {
   background: none;
   border: none;
   color: white;
@@ -298,7 +301,7 @@
   align-items: center;
 }
 
-.btn-close:hover {
+.btn-close-single-consultant:hover {
   opacity: 1;
 }
 

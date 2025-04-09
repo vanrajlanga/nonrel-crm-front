@@ -808,3 +808,47 @@ select.form-input {
   background: #FFF5F5;
   color: #C53030;
 }
+
+/* Toast Notification Styles */
+.Toastify__toast-container {
+  width: 320px;
+}
+
+.Toastify__toast {
+  border-radius: 8px;
+  padding: 16px;
+  font-size: 14px;
+  font-weight: 500;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.Toastify__toast--success {
+  background: linear-gradient(45deg, #10b981, #059669);
+  color: white;
+}
+
+.Toastify__toast--error {
+  background: linear-gradient(45deg, #ef4444, #dc2626);
+  color: white;
+}
+
+.Toastify__progress-bar {
+  height: 3px;
+}
+
+.Toastify__progress-bar--success {
+  background: #059669;
+}
+
+.Toastify__progress-bar--error {
+  background: #dc2626;
+}
+
+.Toastify__close-button {
+  color: white;
+  opacity: 0.8;
+}
+
+.Toastify__close-button:hover {
+  opacity: 1;
+}

@@ -12,12 +12,14 @@ import SignupForm from '../components/Signup/SignupForm';
 import CompanyManagement from '../components/Company/CompanyManagement';
 import ConsultantJobDetails from '../components/Consultant/ConsultantJobDetails';
 import ConsultantAggrementDetails from '../components/Consultant/ConsultantAgreementDetails';
+import UserProfile from '../components/UserProfile/UserProfile';
 // import ConsultantInterviewDetails from '../components/Consultant/ConsultantInterviewDetails';
 // import ConsultantResumeBuilder from '../components/Consultant/ConsultantResumeBuilder';
 import Unauthorized from '../components/Unauthorized';
 import UserManagement from '../components/UserManagement/UserManagement';
 import PrivateRoute from '../components/PrivateRoute'; // Adjust the import path as needed
 import AuthRoute from '../components/AuthRoute';
+import ConsultantVerificationView from '../components/ConsultantVerificationView/ConsultantVerificationView';
 
 const Router = () => {
   return (
@@ -46,7 +48,7 @@ const Router = () => {
         <Route
           path="/consultants"
           element={
-            <PrivateRoute allowedRoles={['superAdmin', 'coordinator', 'resumeBuilder', 'Support']}>
+            <PrivateRoute allowedRoles={['superAdmin', 'coordinator', 'resumeBuilder', 'teamLead']}>
               <ConsultantMain />
             </PrivateRoute>
           }
@@ -54,7 +56,7 @@ const Router = () => {
         <Route
           path="/consultants/consultantsDetails"
           element={
-            <PrivateRoute allowedRoles={['superAdmin', 'coordinator', 'Support', 'resumeBuilder']}>
+            <PrivateRoute allowedRoles={['superAdmin', 'coordinator', 'teamLead', 'resumeBuilder']}>
               <ConsultantDetails />
             </PrivateRoute>
           }
@@ -78,7 +80,7 @@ const Router = () => {
         <Route
           path="/registration"
           element={
-            <PrivateRoute allowedRoles={['superAdmin', 'coordinator', 'Support', 'Candidate']}>
+            <PrivateRoute allowedRoles={['superAdmin', 'coordinator', 'teamLead', 'Candidate']}>
               <ConsultantForm />
             </PrivateRoute>
           }
@@ -94,7 +96,7 @@ const Router = () => {
         <Route
           path="/consultants/consultantJobDetails"
           element={
-            <PrivateRoute allowedRoles={['superAdmin', 'coordinator', 'Support']}>
+            <PrivateRoute allowedRoles={['superAdmin', 'coordinator', 'teamLead']}>
               <ConsultantJobDetails />
             </PrivateRoute>
           }
@@ -104,6 +106,22 @@ const Router = () => {
           element={
             <PrivateRoute allowedRoles={['superAdmin', 'coordinator']}>
               <ConsultantAggrementDetails />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/my-profile"
+          element={
+            <PrivateRoute allowedRoles={['superAdmin', 'coordinator', 'teamLead', 'Candidate']}>
+              <UserProfile />
+            </PrivateRoute> 
+          }
+        />
+        <Route
+          path="/consultant-verification"
+          element={
+            <PrivateRoute allowedRoles={['teamLead', 'coordinator']}>
+              <ConsultantVerificationView />
             </PrivateRoute>
           }
         />

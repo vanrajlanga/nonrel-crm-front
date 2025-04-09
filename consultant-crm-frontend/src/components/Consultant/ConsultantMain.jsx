@@ -26,14 +26,14 @@ const ConsultantMain = () => {
       description: 'View and manage all consultant registrations in one place',
       path: '/consultants/consultantsDetails',
       icon: <BsBuildingsFill size={40} className="text-primary" />,
-      showForRoles: ['superAdmin', 'coordinator', 'Support', 'resumeBuilder']
+      showForRoles: ['superAdmin', 'coordinator', 'teamLead', 'resumeBuilder']
     },
     {
       title: 'Consultants Job Details',
       description: 'Consultants Job Details',
       path: '/consultants/consultantJobDetails',
       icon: <BsPeopleFill size={40} className="text-primary" />,
-      showForRoles: ['superAdmin', 'coordinator', 'Support']
+      showForRoles: ['superAdmin', 'coordinator', 'teamLead']
     },
     {
       title: 'Consultants Agreement Details',
@@ -47,7 +47,7 @@ const ConsultantMain = () => {
       description: 'Consultants Interview Details',
       path: '/consultants/consultantInterviewDetails',
       icon: <BsPersonLinesFill size={40} className="text-primary" />,
-      showForRoles: ['superAdmin', 'coordinator', 'Support']
+      showForRoles: ['superAdmin', 'coordinator', 'teamLead']
     },
     {
       title: 'Consultants Resume Builder',

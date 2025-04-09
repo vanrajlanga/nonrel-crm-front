@@ -55,9 +55,13 @@ const CreateUserModal = ({ onClose, onSave, token }) => {
           />
           <select value={role} onChange={(e) => setRole(e.target.value)}>
             <option value="Candidate">Candidate</option>
-            <option value="Support">Support</option>
+            <option value="teamLead">Team Lead</option>
             <option value="coordinator">Coordinator</option>
             <option value="resumeBuilder">Resume Builder</option>
+            <option value="Accounts">Accounts</option>
+            <option value="Operational Manager">Operational Manager</option>
+            <option value="HR">HR</option>
+            <option value="admin">Admin</option>
             <option value="superAdmin">Super Admin</option>
           </select>
           <div className="modal-actions">
@@ -132,9 +136,13 @@ const EditUserModal = ({ user, onClose, onSave, token }) => {
           />
           <select value={role} onChange={(e) => setRole(e.target.value)}>
             <option value="Candidate">Candidate</option>
-            <option value="Support">Support</option>
+            <option value="teamLead">Team Lead</option>
             <option value="coordinator">Coordinator</option>
             <option value="resumeBuilder">Resume Builder</option>
+            <option value="Accounts">Accounts</option>
+            <option value="Operational Manager">Operational Manager</option>
+            <option value="HR">HR</option>
+            <option value="admin">Admin</option>
             <option value="superAdmin">Super Admin</option>
           </select>
           <div className="modal-actions">

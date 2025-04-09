@@ -25,10 +25,9 @@ const ConsultantJobDetails = () => {
   const [showAgreementModal, setShowAgreementModal] = useState(false);
   const [selectedConsultant, setSelectedConsultant] = useState(null);
   const [agreementData, setAgreementData] = useState({
-    agreementDate: '',
     emiDate: '',
-    emiAmount: '',
-    remark: ''
+    totalSalary: '',
+    remarks: ''
   });
   const [feesData, setFeesData] = useState({
     totalFees: '',
@@ -62,7 +61,7 @@ const ConsultantJobDetails = () => {
           email: detail.email || detail.consultant?.email,
           companyName: detail.companyName,
           position: detail.position || detail.jobType,
-          dateOfJoining: detail.dateOfJoining,
+          dateOfOffer: detail.dateOfOffer,
           createdBy: detail.createdBy,
           feesInfo: detail.feesInfo || {
             totalFees: detail.totalFees || 0,
@@ -72,8 +71,32 @@ const ConsultantJobDetails = () => {
           feesStatus: detail.feesStatus || 'pending',
           isAgreement: detail.isAgreement || false
         }));
+
+        // For each consultant, check if they have an agreement
+        const agreementChecks = jobDetailsData.map(async (consultant) => {
+          try {
+            const agreementResponse = await Axios.get(`/consultants/${consultant.consultantId}/agreement`);
+            return {
+              ...consultant,
+              isAgreement: agreementResponse.data ? true : false
+            };
+          } catch (error) {
+            // If 404, no agreement exists
+            if (error.response?.status === 404) {
+              return {
+                ...consultant,
+                isAgreement: false
+              };
+            }
+            // For other errors, keep the existing isAgreement value
+            return consultant;
+          }
+        });
+
+        // Wait for all agreement checks to complete
+        jobDetailsData = await Promise.all(agreementChecks);
       } else {
-        // For other roles (coordinator, support), use the existing endpoint
+        // For other roles (coordinator, teamLead), use the existing endpoint
         const consultantsResponse = await Axios.get('/consultants');
         const placedConsultants = Array.isArray(consultantsResponse.data) ? 
           consultantsResponse.data.filter(consultant => consultant.isPlaced === true) : [];
@@ -87,7 +110,7 @@ const ConsultantJobDetails = () => {
               email: consultant.email,
               companyName: response.data.companyName,
               position: response.data.position || response.data.jobType,
-              dateOfJoining: response.data.dateOfJoining,
+              dateOfOffer: response.data.dateOfOffer,
               createdBy: response.data.createdBy,
               feesInfo: response.data.feesInfo || {
                 totalFees: response.data.totalFees || 0,
@@ -117,7 +140,7 @@ const ConsultantJobDetails = () => {
       if (Array.isArray(jobDetailsData) && jobDetailsData.length > 0) {
         const uniqueCompanies = [...new Set(jobDetailsData.map(item => item.companyName))].filter(Boolean);
         const uniquePositions = [...new Set(jobDetailsData.map(item => item.position))].filter(Boolean);
-        const uniqueSupportNames = [...new Set(jobDetailsData.map(item => item.createdBy?.name))].filter(Boolean);
+        const uniqueTeamLeadNames = [...new Set(jobDetailsData.map(item => item.createdBy?.name))].filter(Boolean);
 
         setFilterConfig([
           {
@@ -147,13 +170,13 @@ const ConsultantJobDetails = () => {
             ]
           },
           {
-            name: 'supportName',
-            label: 'Support Name',
+            name: 'teamLeadName',
+            label: 'Team Lead',
             type: 'select',
             defaultValue: 'all',
             options: [
-              { value: 'all', label: 'All Support Staff' },
-              ...uniqueSupportNames.map(name => ({
+              { value: 'all', label: 'All Team Leads' },
+              ...uniqueTeamLeadNames.map(name => ({
                 value: name,
                 label: name
               }))
@@ -172,8 +195,8 @@ const ConsultantJobDetails = () => {
             ]
           },
           {
-            name: 'dateOfJoining',
-            label: 'Date of Joining',
+            name: 'dateOfOffer',
+            label: 'Date of Offer',
             type: 'dateRange',
             defaultValue: ''
           }
@@ -244,9 +267,9 @@ const ConsultantJobDetails = () => {
         filtered = filtered.filter(detail => detail.position === filterOptions.position);
       }
 
-      // Filter by support name
-      if (filterOptions.supportName && filterOptions.supportName !== 'all') {
-        filtered = filtered.filter(detail => detail.createdBy?.name === filterOptions.supportName);
+      // Filter by team lead name
+      if (filterOptions.teamLeadName && filterOptions.teamLeadName !== 'all') {
+        filtered = filtered.filter(detail => detail.createdBy?.name === filterOptions.teamLeadName);
       }
 
       // Filter by fees status
@@ -255,19 +278,19 @@ const ConsultantJobDetails = () => {
       }
       
       // Filter by date range
-      if (filterOptions.dateOfJoiningFrom || filterOptions.dateOfJoiningTo) {
-        const fromDate = filterOptions.dateOfJoiningFrom ? new Date(filterOptions.dateOfJoiningFrom) : null;
-        const toDate = filterOptions.dateOfJoiningTo ? new Date(filterOptions.dateOfJoiningTo) : null;
+      if (filterOptions.dateOfOfferFrom || filterOptions.dateOfOfferTo) {
+        const fromDate = filterOptions.dateOfOfferFrom ? new Date(filterOptions.dateOfOfferFrom) : null;
+        const toDate = filterOptions.dateOfOfferTo ? new Date(filterOptions.dateOfOfferTo) : null;
         
         filtered = filtered.filter(detail => {
-          const joiningDate = new Date(detail.dateOfJoining);
+          const offerDate = new Date(detail.dateOfOffer);
           
           if (fromDate && toDate) {
-            return joiningDate >= fromDate && joiningDate <= toDate;
+            return offerDate >= fromDate && offerDate <= toDate;
           } else if (fromDate) {
-            return joiningDate >= fromDate;
+            return offerDate >= fromDate;
           } else if (toDate) {
-            return joiningDate <= toDate;
+            return offerDate <= toDate;
           }
           return true;
         });
@@ -468,33 +491,17 @@ const ConsultantJobDetails = () => {
   };
 
   const handleAgreementModalOpen = async (consultant) => {
+    console.log('Opening agreement modal for consultant:', consultant);
     setSelectedConsultant(consultant);
     try {
-      // Fetch existing agreement if any
-      const response = await Axios.get(`/consultants/${consultant.consultantId}/agreement`);
-      if (response.data) {
-        setAgreementData({
-          agreementDate: response.data.agreementDate || '',
-          emiDate: response.data.emiDate?.toString() || '',
-          emiAmount: response.data.emiAmount || '',
-          remark: response.data.remark || ''
-        });
-      } else {
-        setAgreementData({
-          agreementDate: '',
-          emiDate: '',
-          emiAmount: '',
-          remark: ''
-        });
-      }
-    } catch (error) {
-      console.error('Error fetching agreement:', error);
       setAgreementData({
-        agreementDate: '',
         emiDate: '',
-        emiAmount: '',
-        remark: ''
+        totalSalary: '',
+        remarks: ''
       });
+    } catch (error) {
+      console.error('Error in handleAgreementModalOpen:', error);
+      toast.error('Error initializing agreement form');
     }
     setShowAgreementModal(true);
   };
@@ -502,41 +509,91 @@ const ConsultantJobDetails = () => {
   const handleAgreementSubmit = async (e) => {
     e.preventDefault();
     try {
+      console.log('Selected Consultant:', selectedConsultant);
+      
+      if (!selectedConsultant) {
+        throw new Error('No consultant selected');
+      }
+
+      // Validate required fields
+      if (!agreementData.emiDate || !agreementData.totalSalary) {
+        toast.error('EMI date and Total Salary are required');
+        return;
+      }
+
+      // Validate EMI date
+      const emiDateNum = parseInt(agreementData.emiDate, 10);
+      if (isNaN(emiDateNum) || emiDateNum < 1 || emiDateNum > 31) {
+        toast.error('EMI date must be between 1 and 31');
+        return;
+      }
+
+      // Validate total salary
+      const totalSalary = parseFloat(agreementData.totalSalary);
+      if (isNaN(totalSalary) || totalSalary <= 0) {
+        toast.error('Total salary must be greater than 0');
+        return;
+      }
+
+      // Construct the exact payload structure
       const payload = {
-        agreementDate: agreementData.agreementDate,
-        emiDate: parseInt(agreementData.emiDate, 10),
-        emiAmount: parseFloat(agreementData.emiAmount),
-        remark: agreementData.remark
+        emiDate: emiDateNum,
+        totalSalary: totalSalary,
+        remarks: agreementData.remarks || ''
       };
 
+      console.log('Submitting agreement payload:', payload);
+
       const response = await Axios.post(`/consultants/${selectedConsultant.consultantId}/agreement`, payload);
+      console.log('Agreement creation response:', response.data);
 
       if (response.data) {
-        const updateConsultantState = (prevDetails) =>
+        // Update the local state to reflect the new agreement
+        const updatedConsultantState = (prevDetails) =>
           prevDetails.map(consultant =>
             consultant.consultantId === selectedConsultant.consultantId
               ? {
                   ...consultant,
-                  isAgreement: true,
-                  ...payload
+                  isAgreement: true
                 }
               : consultant
           );
 
-        setJobDetails(updateConsultantState);
-        setFilteredJobDetails(updateConsultantState);
+        setJobDetails(updatedConsultantState);
+        setFilteredJobDetails(updatedConsultantState);
         toast.success('Agreement created successfully');
         setShowAgreementModal(false);
       }
     } catch (error) {
-      const errorMessage = error.response?.data?.message || 'Error creating agreement';
-      if (error.response?.data?.errors) {
-        const validationErrors = error.response.data.errors
-          .map(err => `${err.field}: ${err.message}`)
-          .join(', ');
-        toast.error(`Validation error: ${validationErrors}`);
+      console.error('Error creating agreement:', error);
+      console.error('Error response:', error.response);
+      
+      if (error.response?.status === 400 && 
+          error.response?.data?.message?.includes('An agreement already exists')) {
+        // If agreement exists, show cancel button and error message
+        const updatedConsultantState = (prevDetails) =>
+          prevDetails.map(consultant =>
+            consultant.consultantId === selectedConsultant.consultantId
+              ? {
+                  ...consultant,
+                  isAgreement: true
+                }
+              : consultant
+          );
+
+        setJobDetails(updatedConsultantState);
+        setFilteredJobDetails(updatedConsultantState);
+        toast.error(error.response.data.message);
       } else {
-        toast.error(errorMessage);
+        const errorMessage = error.response?.data?.message || 'Error creating agreement';
+        if (error.response?.data?.errors) {
+          const validationErrors = error.response.data.errors
+            .map(err => `${err.field}: ${err.message}`)
+            .join(', ');
+          toast.error(`Validation error: ${validationErrors}`);
+        } else {
+          toast.error(errorMessage);
+        }
       }
     }
   };
@@ -552,6 +609,31 @@ const ConsultantJobDetails = () => {
   // Handle filter application
   const handleFilterApplied = (filterOptions) => {
     applyFiltersAndSearch(searchQuery, filterOptions);
+  };
+
+  const handleCancelAgreement = async (consultant) => {
+    try {
+      const response = await Axios.delete(`/consultants/${consultant.consultantId}/agreement`);
+      if (response.data) {
+        // Update the local state to reflect the agreement cancellation
+        const updatedConsultantState = (prevDetails) =>
+          prevDetails.map(c =>
+            c.consultantId === consultant.consultantId
+              ? {
+                  ...c,
+                  isAgreement: false
+                }
+              : c
+          );
+
+        setJobDetails(updatedConsultantState);
+        setFilteredJobDetails(updatedConsultantState);
+        toast.success('Agreement cancelled successfully');
+      }
+    } catch (error) {
+      console.error('Error cancelling agreement:', error);
+      toast.error(error.response?.data?.message || 'Error cancelling agreement');
+    }
   };
 
   return (
@@ -611,8 +693,8 @@ const ConsultantJobDetails = () => {
               <th>EMAIL</th>
               <th>COMPANY NAME</th>
               <th>POSITION</th>
-              <th>DATE OF JOINING</th>
-              <th>Support Name</th>
+              <th>DATE OF OFFER</th>
+              <th>Team Lead Name</th>
               {issuperAdmin ? <th>FEES</th> : <th>FEES STATUS</th>}
               {issuperAdmin && <th>ACTIONS</th>}
             </tr>
@@ -624,7 +706,7 @@ const ConsultantJobDetails = () => {
                 <td>{detail.email || '----'}</td>
                 <td>{detail.companyName || '----'}</td>
                 <td>{detail.position || '----'}</td>
-                <td>{detail.dateOfJoining ? formatDate(detail.dateOfJoining) : '----'}</td>
+                <td>{detail.dateOfOffer ? formatDate(detail.dateOfOffer) : '----'}</td>
                 <td>{detail.createdBy?.name || '----'}</td>
                 {issuperAdmin ? (
                   <td>
@@ -660,13 +742,23 @@ const ConsultantJobDetails = () => {
                       >
                         <BsCurrencyDollar /> Manage Fees
                       </Button>
-                      <Button
-                        variant={detail.isAgreement ? "outline-success" : "outline-secondary"}
-                        size="sm"
-                        onClick={() => handleAgreementModalOpen(detail)}
-                      >
-                        {detail.isAgreement ? '✓ Agreement' : 'Agreement'}
-                      </Button>
+                      {detail.isAgreement ? (
+                        <Button
+                          variant="outline-danger"
+                          size="sm"
+                          onClick={() => handleCancelAgreement(detail)}
+                        >
+                          Cancel Agreement
+                        </Button>
+                      ) : (
+                        <Button
+                          variant="outline-secondary"
+                          size="sm"
+                          onClick={() => handleAgreementModalOpen(detail)}
+                        >
+                          Agreement
+                        </Button>
+                      )}
                     </div>
                   </td>
                 )}
@@ -769,23 +861,12 @@ const ConsultantJobDetails = () => {
       {/* Agreement Management Modal */}
       <Modal show={showAgreementModal} onHide={() => setShowAgreementModal(false)} centered>
         <Modal.Header closeButton>
-          <Modal.Title>Manage Agreement Details</Modal.Title>
+          <Modal.Title>Create Agreement Details</Modal.Title>
         </Modal.Header>
         <Modal.Body>
           <Form onSubmit={handleAgreementSubmit}>
             <Form.Group className="mb-3">
-              <Form.Label>Agreement Date</Form.Label>
-              <Form.Control
-                type="date"
-                name="agreementDate"
-                value={agreementData.agreementDate}
-                onChange={handleAgreementInputChange}
-                required
-              />
-            </Form.Group>
-
-            <Form.Group className="mb-3">
-              <Form.Label>EMI Day of Month (1-31)</Form.Label>
+              <Form.Label>EMI Day of Month (1-31) <span className="text-danger">*</span></Form.Label>
               <Form.Control
                 type="number"
                 name="emiDate"
@@ -802,25 +883,28 @@ const ConsultantJobDetails = () => {
             </Form.Group>
 
             <Form.Group className="mb-3">
-              <Form.Label>Emi Amount</Form.Label>
+              <Form.Label>Total Salary <span className="text-danger">*</span></Form.Label>
               <Form.Control
                 type="number"
-                name="emiAmount"
-                value={agreementData.emiAmount}
+                name="totalSalary"
+                value={agreementData.totalSalary}
                 onChange={handleAgreementInputChange}
                 required
                 min="0"
                 step="0.01"
+                placeholder="Enter total salary amount"
               />
             </Form.Group>
 
             <Form.Group className="mb-3">
-              <Form.Label>Remark</Form.Label>
+              <Form.Label>Remarks</Form.Label>
               <Form.Control
-                type="text"
-                name="remark"
-                value={agreementData.remark}
+                as="textarea"
+                rows={3}
+                name="remarks"
+                value={agreementData.remarks}
                 onChange={handleAgreementInputChange}
+                placeholder="Enter any additional notes"
               />
             </Form.Group>
 
@@ -828,8 +912,12 @@ const ConsultantJobDetails = () => {
               <Button variant="secondary" onClick={() => setShowAgreementModal(false)}>
                 Cancel
               </Button>
-              <Button variant="primary" type="submit">
-                Update Agreement
+              <Button 
+                variant="primary" 
+                type="submit"
+                disabled={!agreementData.emiDate || !agreementData.totalSalary}
+              >
+                Create Agreement
               </Button>
             </div>
           </Form>

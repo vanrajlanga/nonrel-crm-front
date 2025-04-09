@@ -127,8 +127,14 @@
   display: flex;
   align-items: center;
   border-radius: 5px;
-    padding: 5px;
-    background: linear-gradient(45deg, #4299e1, #667eea);
+  padding: 5px;
+  background: linear-gradient(45deg, #4299e1, #667eea);
+  cursor: default;
+}
+
+.username:hover {
+  background: linear-gradient(45deg, #4299e1, #667eea);
+  transform: none;
 }
 
 .username::before {
@@ -149,4 +155,128 @@
   background-color: #ff1f1f;
   color: white;
   transform: translateY(-1px);
+}
+
+.notification-container {
+  position: relative;
+  margin-right: 1rem;
+}
+
+.notification-btn {
+  background: none;
+  border: none;
+  color: white;
+  font-size: 1.5rem;
+  cursor: pointer;
+  position: relative;
+  padding: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.notification-badge {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  background-color: #ff3e3e;
+  color: white;
+  border-radius: 50%;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.75rem;
+  font-weight: bold;
+}
+
+.notification-dropdown {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  width: 350px;
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  z-index: 1000;
+  max-height: 500px;
+  overflow-y: auto;
+}
+
+.notification-header {
+  padding: 1rem;
+  border-bottom: 1px solid #e2e8f0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  position: sticky;
+  top: 0;
+  background-color: white;
+  z-index: 1;
+}
+
+.notification-header h3 {
+  margin: 0;
+  font-size: 1rem;
+  color: #2d3748;
+}
+
+.notification-count {
+  background-color: #edf2f7;
+  color: #4a5568;
+  padding: 0.25rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+}
+
+.notification-list {
+  padding: 0.5rem;
+}
+
+.notification-item {
+  padding: 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.notification-item:last-child {
+  border-bottom: none;
+}
+
+.notification-item:hover {
+  background-color: #f7fafc;
+}
+
+.notification-content {
+  margin-bottom: 0.5rem;
+}
+
+.notification-content h4 {
+  margin: 0;
+  font-size: 0.9rem;
+  color: #2d3748;
+  font-weight: 600;
+}
+
+.notification-content p {
+  margin: 0.25rem 0;
+  font-size: 0.8rem;
+  color: #718096;
+}
+
+.notification-documents {
+  color: #4299e1 !important;
+  font-weight: 500;
+}
+
+.notification-time {
+  font-size: 0.75rem;
+  color: #a0aec0;
+  text-align: right;
+}
+
+.no-notifications {
+  padding: 2rem;
+  text-align: center;
+  color: #718096;
+  font-size: 0.9rem;
 }

@@ -38,7 +38,7 @@ const ConsultantDetails = () => {
   const [jobFormData, setJobFormData] = useState({
     companyId: '',
     jobId: '',
-    dateOfJoining: '',
+    dateOfOffer: '',
     jobType: ''
   });
 
@@ -46,56 +46,23 @@ const ConsultantDetails = () => {
   const [showStaffModal, setShowStaffModal] = useState(false);
   const [selectedConsultantForStaff, setSelectedConsultantForStaff] = useState(null);
   const [coordinators, setCoordinators] = useState([]);
-  const [supportStaff, setSupportStaff] = useState([]);
+  const [teamLeads, setTeamLeads] = useState([]);
   const [staffAssignmentData, setStaffAssignmentData] = useState({
     coordinatorId: '',
-    supportId: ''
+    coordinator2Id: '',
+    teamLeadId: ''
   });
 
- 
-
-  // Get user role on component mount
   useEffect(() => {
     const role = localStorage.getItem('role');
-    setUserRole(role);
-  }, []);
-
-
-  // Update filter configuration when consultants data changes
-  useEffect(() => {
-    if (consultants.length > 0) {
-      setFilterConfig([
-        {
-          name: 'paymentStatus',
-          label: 'Payment Status',
-          type: 'select',
-          defaultValue: 'all',
-          options: [
-            { value: 'all', label: 'All Statuses' },
-            { value: 'verified', label: 'Verified' },
-            { value: 'pending', label: 'Pending' }
-          ]
-        },
-        {
-          name: 'isPlaced',
-          label: 'Placement Status',
-          type: 'select',
-          defaultValue: 'all',
-          options: [
-            { value: 'all', label: 'All' },
-            { value: 'true', label: 'Placed' },
-            { value: 'false', label: 'Not Placed' }
-          ]
-        },
-        {
-          name: 'registrationDate',
-          label: 'Registration Date',
-          type: 'dateRange',
-          defaultValue: ''
-        }
-      ]);
+    if (role !== 'superAdmin' && role !== 'coordinator' && role !== 'teamLead' && role !== 'resumeBuilder') {
+      toast.error('Access forbidden: insufficient privileges');
+      navigate('/');
+      return;
     }
-  }, [consultants]);
+    setUserRole(role);
+    loadConsultants();
+  }, [navigate]);
 
   const loadConsultants = async () => {
     try {
@@ -111,48 +78,152 @@ const ConsultantDetails = () => {
               key !== 'id' && 
               key !== 'updatedAt' &&
               key.toLowerCase() !== 'assignedcoordinatorid' &&
-              key.toLowerCase() !== 'assignedsupportid' &&
+              key.toLowerCase() !== 'assignedteamleadid' &&
               key.toLowerCase() !== 'assignmentdate')
         : [];
 
       // Transform the data to include all fields, even if null
       const consultantsWithFields = res.data.map(consultant => {
         const fields = allFields.map(fieldName => {
-          // If the field is createdAt, rename it to "Date"
-          // If the field is paymentStatus, rename it to "Payment Status"
           let displayName = fieldName;
+          let value = consultant[fieldName];
+
           if (fieldName === 'createdAt') {
             displayName = 'date';
           } else if (fieldName === 'paymentStatus') {
             displayName = 'payment status';
+          } else if (fieldName === 'coordinators') {
+            // Skip the original coordinators field as we'll add two new fields
+            return null;
           }
           
           return {
             fieldName: displayName,
-            value: consultant[fieldName] ?? null
+            value: value ?? null
           };
-        });
+        }).filter(Boolean); // Remove null entries
+
+        // Add coordinator1 and coordinator2 as separate fields
+        if (consultant.coordinators && Array.isArray(consultant.coordinators)) {
+          fields.push({
+            fieldName: 'coordinator1',
+            value: consultant.coordinators[0]?.username || '----'
+          });
+
+          fields.push({
+            fieldName: 'coordinator2',
+            value: consultant.coordinators[1]?.username || '----'
+          });
+        } else {
+          fields.push(
+            { fieldName: 'coordinator1', value: '----' },
+            { fieldName: 'coordinator2', value: '----' }
+          );
+        }
 
         return {
           ...consultant,
           fields,
-          allFields
+          allFields: [...allFields.filter(field => field !== 'coordinators'), 'coordinator1', 'coordinator2']
         };
       });
 
       setConsultants(consultantsWithFields);
       setFilteredConsultants(consultantsWithFields);
+
+      // Set up filter configuration
+      const uniqueTechnologies = [...new Set(consultantsWithFields.map(item => item.technology))].filter(Boolean);
+      const uniqueVisaStatuses = [...new Set(consultantsWithFields.map(item => item.visaStatus))].filter(Boolean);
+      const uniqueTeamLeads = [...new Set(consultantsWithFields.map(item => item.teamLead?.username))].filter(Boolean);
+
+      setFilterConfig([
+        {
+          name: 'paymentStatus',
+          label: 'Payment Status',
+          type: 'select',
+          defaultValue: 'all',
+          options: [
+            { value: 'all', label: 'All Statuses' },
+            { value: 'verified', label: 'Verified' },
+            { value: 'pending', label: 'Pending' }
+          ]
+        },
+        {
+          name: 'resumeStatus',
+          label: 'Resume Status',
+          type: 'select',
+          defaultValue: 'all',
+          options: [
+            { value: 'all', label: 'All Statuses' },
+            { value: 'accepted', label: 'Accepted' },
+            { value: 'rejected', label: 'Rejected' },
+            { value: 'not_built', label: 'Not Built' }
+          ]
+        },
+        {
+          name: 'technology',
+          label: 'Technology',
+          type: 'select',
+          defaultValue: 'all',
+          options: [
+            { value: 'all', label: 'All Technologies' },
+            ...uniqueTechnologies.map(tech => ({
+              value: tech,
+              label: tech
+            }))
+          ]
+        },
+        {
+          name: 'visaStatus',
+          label: 'Visa Status',
+          type: 'select',
+          defaultValue: 'all',
+          options: [
+            { value: 'all', label: 'All Statuses' },
+            ...uniqueVisaStatuses.map(status => ({
+              value: status,
+              label: status
+            }))
+          ]
+        },
+        {
+          name: 'registrationDate',
+          label: 'Registration Date',
+          type: 'dateRange',
+          defaultValue: ''
+        }
+      ]);
+
+      // Initialize visible columns
+      const initialColumns = {};
+      const preSelectedFields = [
+        'fulllegalname',
+        'technology',
+        'phone',
+        'email',
+        'resumestatus',
+        'date',
+        'coordinator1',
+        'coordinator2',
+        'teamlead',
+        'resumebuilder'
+      ];
+      
+      consultantsWithFields[0].fields.forEach(field => {
+        const fieldNameLower = field.fieldName.toLowerCase();
+        initialColumns[field.fieldName] = preSelectedFields.includes(fieldNameLower);
+      });
+      
+      setVisibleColumns(initialColumns);
     } catch (error) {
       console.error('Error fetching consultants:', error);
-      setError('Failed to fetch consultants. Please try again.');
+      const errorMessage = error.response?.data?.message || 'Failed to fetch consultants';
+      setError(errorMessage);
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
   };
-
-  useEffect(() => {
-    loadConsultants();
-  }, []);
 
   const handleConsultantClick = (consultantId) => {
     navigate(`/consultants/singleConsultant/${consultantId}`);
@@ -177,23 +248,18 @@ const ConsultantDetails = () => {
   const applyFiltersAndSearch = (search = searchQuery, filterOptions = {}) => {
     let filtered = [...consultants];
     
-    // Apply search filter across multiple fields
+    // Apply search filter
     if (typeof search === 'string' && search.trim() !== '') {
       const searchLower = search.toLowerCase();
-      filtered = filtered.filter(consultant => {
-        // Search through all visible fields
-        return consultant.fields.some(field => {
-          const value = field.value;
-          if (value === null || value === undefined) return false;
-          
-          // Convert value to string for searching
-          const stringValue = value.toString().toLowerCase();
-          return stringValue.includes(searchLower);
-        });
-      });
+      filtered = filtered.filter(consultant => 
+        consultant.fulllegalname?.toLowerCase().includes(searchLower) ||
+        consultant.email?.toLowerCase().includes(searchLower) ||
+        consultant.technology?.toLowerCase().includes(searchLower) ||
+        consultant.phone?.toLowerCase().includes(searchLower)
+      );
     }
     
-    // Apply other filters
+    // Apply filters
     if (Object.keys(filterOptions).length > 0) {
       // Filter by payment status
       if (filterOptions.paymentStatus && filterOptions.paymentStatus !== 'all') {
@@ -203,15 +269,28 @@ const ConsultantDetails = () => {
         );
       }
 
-      // Filter by placement status
-      if (filterOptions.isPlaced && filterOptions.isPlaced !== 'all') {
-        const isPlaced = filterOptions.isPlaced === 'true';
+      // Filter by resume status
+      if (filterOptions.resumeStatus && filterOptions.resumeStatus !== 'all') {
         filtered = filtered.filter(consultant => 
-          consultant.isPlaced === isPlaced
+          consultant.resumeStatus?.toLowerCase() === filterOptions.resumeStatus.toLowerCase()
+        );
+      }
+
+      // Filter by technology
+      if (filterOptions.technology && filterOptions.technology !== 'all') {
+        filtered = filtered.filter(consultant => 
+          consultant.technology === filterOptions.technology
+        );
+      }
+
+      // Filter by visa status
+      if (filterOptions.visaStatus && filterOptions.visaStatus !== 'all') {
+        filtered = filtered.filter(consultant => 
+          consultant.visaStatus === filterOptions.visaStatus
         );
       }
       
-      // Filter by date range (registration date)
+      // Filter by date range
       if (filterOptions.registrationDateFrom || filterOptions.registrationDateTo) {
         const fromDate = filterOptions.registrationDateFrom ? new Date(filterOptions.registrationDateFrom) : null;
         const toDate = filterOptions.registrationDateTo ? new Date(filterOptions.registrationDateTo) : null;
@@ -232,7 +311,7 @@ const ConsultantDetails = () => {
     }
     
     setFilteredConsultants(filtered);
-    setCurrentPage(1); // Reset to first page when filters/search are applied
+    setCurrentPage(1);
   };
 
   // Handle filter application
@@ -306,22 +385,6 @@ const ConsultantDetails = () => {
     
     return pageNumbers;
   };
-
-  // Initialize visible columns when consultants data is loaded
-  useEffect(() => {
-    if (consultants.length > 0 && consultants[0]?.fields) {
-      const initialColumns = {};
-      consultants[0].fields.forEach(field => {
-        const fieldNameLower = field.fieldName.toLowerCase();
-        if (fieldNameLower !== 'assignedcoordinatorid' && 
-            fieldNameLower !== 'assignedsupportid' &&
-            fieldNameLower !== 'assignmentdate') {
-          initialColumns[field.fieldName] = true;
-        }
-      });
-      setVisibleColumns(initialColumns);
-    }
-  }, [consultants]);
 
   // Close column toggle dropdown when clicking outside
   useEffect(() => {
@@ -398,7 +461,7 @@ const ConsultantDetails = () => {
       setJobFormData({
         companyId: '',
         jobId: '',
-        dateOfJoining: '',
+        dateOfOffer: '',
         jobType: ''
       });
       // Fetch fresh list of companies when modal opens
@@ -413,7 +476,7 @@ const ConsultantDetails = () => {
   const handleJobSubmit = async (e) => {
     e.preventDefault();
     
-    if (!jobFormData.companyId || !jobFormData.jobId || !jobFormData.dateOfJoining) {
+    if (!jobFormData.companyId || !jobFormData.jobId || !jobFormData.dateOfOffer) {
       toast.error('Please fill in all required fields');
       return;
     }
@@ -438,7 +501,7 @@ const ConsultantDetails = () => {
       const payload = {
         companyName: selectedCompany.companyName,
         jobType: selectedJob.jobTitle,
-        dateOfJoining: jobFormData.dateOfJoining
+        dateOfOffer: jobFormData.dateOfOffer
       };
 
       console.log('Submitting job details:', payload);
@@ -450,7 +513,7 @@ const ConsultantDetails = () => {
       setJobFormData({
         companyId: '',
         jobId: '',
-        dateOfJoining: '',
+        dateOfOffer: '',
         jobType: ''
       });
       // Refresh the consultant list
@@ -461,12 +524,12 @@ const ConsultantDetails = () => {
     }
   };
 
-  // Add this function to fetch coordinators and support staff
+  // Add this function to fetch coordinators and team leads
   const fetchStaffMembers = async () => {
     try {
       // Initialize as empty arrays
       setCoordinators([]);
-      setSupportStaff([]);
+      setTeamLeads([]);
 
       // Fetch users with coordinator role
       const coordinatorsResponse = await Axios.get('/users?role=coordinator');
@@ -477,20 +540,24 @@ const ConsultantDetails = () => {
         setCoordinators([]);
       }
 
-      // Fetch users with support role
-      const supportResponse = await Axios.get('/users?role=Support');
-      if (supportResponse.data?.users && Array.isArray(supportResponse.data.users)) {
-        setSupportStaff(supportResponse.data.users);
+      // Fetch users with teamLead role (using camelCase as per backend)
+      const teamLeadResponse = await Axios.get('/users?role=teamLead');
+      if (teamLeadResponse.data?.users && Array.isArray(teamLeadResponse.data.users)) {
+        setTeamLeads(teamLeadResponse.data.users);
       } else {
-        console.warn('Support staff response is not in expected format:', supportResponse.data);
-        setSupportStaff([]);
+        console.warn('Team Lead response is not in expected format:', teamLeadResponse.data);
+        setTeamLeads([]);
       }
     } catch (error) {
       console.error('Error fetching staff members:', error);
-      toast.error('Failed to load staff members');
+      if (error.response?.status === 400) {
+        toast.error('Invalid role specified. Please check the role name.');
+      } else {
+        toast.error('Failed to load staff members');
+      }
       // Ensure state is set to empty arrays on error
       setCoordinators([]);
-      setSupportStaff([]);
+      setTeamLeads([]);
     }
   };
 
@@ -498,7 +565,13 @@ const ConsultantDetails = () => {
   const handleStaffAssignment = async (e) => {
     e.preventDefault();
     try {
-      const response = await Axios.post(`/consultants/${selectedConsultantForStaff}/assign-staff`, staffAssignmentData);
+      const payload = {
+        coordinatorId: staffAssignmentData.coordinatorId,
+        coordinator2Id: staffAssignmentData.coordinator2Id,
+        teamLeadId: staffAssignmentData.teamLeadId
+      };
+
+      const response = await Axios.post(`/consultants/${selectedConsultantForStaff}/assign-staff`, payload);
       
       if (response.data) {
         toast.success('Staff assigned successfully');
@@ -732,7 +805,9 @@ const ConsultantDetails = () => {
                 .filter(field => visibleColumns[field.fieldName])
                 .map((field, index) => (
                   <th key={index} className="header-cell">
-                    {field.fieldName.toUpperCase()}
+                    {field.fieldName.toLowerCase() === 'coordinator1' ? 'COORDINATOR 1' :
+                     field.fieldName.toLowerCase() === 'coordinator2' ? 'COORDINATOR 2' :
+                     field.fieldName.toUpperCase()}
                   </th>
               ))}
             </tr>
@@ -741,26 +816,26 @@ const ConsultantDetails = () => {
             {currentConsultants.map((consultant) => (
               <tr key={consultant.id} className="consultant-row">
                 <td className="data-cell">
-                  <div className="action-buttons">
-                    {(userRole === 'superAdmin') && (
+                  <div className="action-buttons-Details">
+                    {userRole === 'superAdmin' && (
                       <button
                         className="btn btn-view"
                         onClick={() => handleConsultantClick(consultant.id)}
                       >
-                        <BsEye /> View
+                        <BsEye />
                       </button>
                     )}
-                    {userRole === 'superAdmin' && (
+                    {(userRole === 'superAdmin' || userRole === 'teamLead' || userRole === 'coordinator') && (
                       consultant.isPlaced ? (
                         <span className="badge placement-success">
-                          <BsBriefcase /> Placed
+                          <BsBriefcase />
                         </span>
                       ) : (
                         <button
                           className="btn btn-job"
                           onClick={() => handleJobModalOpen(consultant.id)}
                         >
-                          <BsBriefcase /> Job
+                          <BsBriefcase />
                         </button>
                       )
                     )}
@@ -770,7 +845,7 @@ const ConsultantDetails = () => {
                         onClick={() => handleStaffModalOpen(consultant.id)}
                         title="Assign Staff"
                       >
-                        <BsPeople /> Staff
+                        <BsPeople />
                       </button>
                     )}
                     {userRole === 'resumeBuilder' && (
@@ -809,7 +884,11 @@ const ConsultantDetails = () => {
                   .filter(field => visibleColumns[field.fieldName])
                   .map((field, index) => (
                     <td key={index} className="data-cell">
-                      {field.fieldName === 'payment status' ? (
+                      {field.fieldName.toLowerCase() === 'coordinator' ? (
+                        <div style={{ whiteSpace: 'pre-line' }}>
+                          {field.value || '----'}
+                        </div>
+                      ) : field.fieldName === 'payment status' ? (
                         <span className={`badge ${field.value ? 'payment-verified' : 'payment-pending'}`}>
                           {field.value ? 'Verified' : 'Pending'}
                         </span>
@@ -850,6 +929,44 @@ const ConsultantDetails = () => {
                           </button>
                         ) : (
                           <span className="text-muted">No resume uploaded</span>
+                        )
+                      ) : field.fieldName.toLowerCase() === 'documentverificationstatus' ? (
+                        <span className={`badge ${field.value?.toLowerCase() === 'verified' ? 'bg-success' : 'bg-warning'}`}>
+                          {field.value?.charAt(0).toUpperCase() + field.value?.slice(1).toLowerCase()}
+                        </span>
+                      ) : field.fieldName.toLowerCase().includes('document') && 
+                          !field.fieldName.toLowerCase().includes('verificationstatus') ? (
+                        field.value ? (
+                          <button
+                            className="btn btn-view-document"
+                            onClick={async () => {
+                              try {
+                                const documentNumber = field.fieldName.toLowerCase().replace('document', '');
+                                const response = await Axios.get(`/consultants/${consultant.id}/documents/document${documentNumber}`, {
+                                  responseType: 'blob'
+                                });
+                                
+                                const url = window.URL.createObjectURL(new Blob([response.data], { type: 'application/pdf' }));
+                                const newWindow = window.open(url, '_blank');
+                                if (!newWindow) {
+                                  toast.error('Please allow popups to view the document');
+                                }
+                              } catch (error) {
+                                console.error('Error fetching document:', error);
+                                if (error.response?.status === 403) {
+                                  toast.error('You are not authorized to view this document');
+                                } else if (error.response?.status === 404) {
+                                  toast.error('Document not found');
+                                } else {
+                                  toast.error('Failed to fetch document. Please try again.');
+                                }
+                              }
+                            }}
+                          >
+                            <BsEye /> View
+                          </button>
+                        ) : (
+                          <span className="text-muted">Not uploaded</span>
                         )
                       ) : typeof field.value === 'boolean' ? (
                         <span className={`badge ${field.value ? 'bg-success' : 'bg-secondary'}`}>
@@ -970,12 +1087,12 @@ const ConsultantDetails = () => {
             </Form.Group>
 
             <Form.Group className="mb-3">
-              <Form.Label>Date of Joining</Form.Label>
+              <Form.Label>Date of Offer</Form.Label>
               <Form.Control
                 type="date"
-                name="dateOfJoining"
-                value={jobFormData.dateOfJoining}
-                onChange={(e) => setJobFormData(prev => ({ ...prev, dateOfJoining: e.target.value }))}
+                name="dateOfOffer"
+                value={jobFormData.dateOfOffer}
+                onChange={(e) => setJobFormData(prev => ({ ...prev, dateOfOffer: e.target.value }))}
                 required
               />
             </Form.Group>
@@ -1000,7 +1117,7 @@ const ConsultantDetails = () => {
         <Modal.Body>
           <Form onSubmit={handleStaffAssignment}>
             <Form.Group className="mb-3">
-              <Form.Label>Coordinator</Form.Label>
+              <Form.Label>Primary Coordinator</Form.Label>
               <Form.Select
                 value={staffAssignmentData.coordinatorId}
                 onChange={(e) => setStaffAssignmentData(prev => ({
@@ -1008,7 +1125,7 @@ const ConsultantDetails = () => {
                   coordinatorId: e.target.value
                 }))}
               >
-                <option value="">Select Coordinator</option>
+                <option value="">Select Primary Coordinator</option>
                 {coordinators.map(coordinator => (
                   <option key={coordinator.id} value={coordinator.id}>
                     {coordinator.username} ({coordinator.email})
@@ -1018,18 +1135,38 @@ const ConsultantDetails = () => {
             </Form.Group>
 
             <Form.Group className="mb-3">
-              <Form.Label>Support Staff</Form.Label>
+              <Form.Label>Secondary Coordinator (Optional)</Form.Label>
               <Form.Select
-                value={staffAssignmentData.supportId}
+                value={staffAssignmentData.coordinator2Id}
                 onChange={(e) => setStaffAssignmentData(prev => ({
                   ...prev,
-                  supportId: e.target.value
+                  coordinator2Id: e.target.value
                 }))}
               >
-                <option value="">Select Support Staff</option>
-                {supportStaff.map(support => (
-                  <option key={support.id} value={support.id}>
-                    {support.username} ({support.email})
+                <option value="">Select Secondary Coordinator</option>
+                {coordinators
+                  .filter(coord => coord.id !== staffAssignmentData.coordinatorId)
+                  .map(coordinator => (
+                    <option key={coordinator.id} value={coordinator.id}>
+                      {coordinator.username} ({coordinator.email})
+                    </option>
+                ))}
+              </Form.Select>
+            </Form.Group>
+
+            <Form.Group className="mb-3">
+              <Form.Label>Team Lead</Form.Label>
+              <Form.Select
+                value={staffAssignmentData.teamLeadId}
+                onChange={(e) => setStaffAssignmentData(prev => ({
+                  ...prev,
+                  teamLeadId: e.target.value
+                }))}
+              >
+                <option value="">Select Team Lead</option>
+                {teamLeads.map(teamLead => (
+                  <option key={teamLead.id} value={teamLead.id}>
+                    {teamLead.username} ({teamLead.email})
                   </option>
                 ))}
               </Form.Select>
