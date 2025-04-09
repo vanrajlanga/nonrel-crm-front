@@ -695,7 +695,7 @@ const ConsultantDetails = () => {
       <ToastContainer />
       <div className="consultant-header text-center">
         <h2 className="display-6 fw-bold mb-3">
-          Consultant Registration Details
+          Consultant Registration Fee
         </h2>
         <p className="mb-0">
           View and manage consultant information
