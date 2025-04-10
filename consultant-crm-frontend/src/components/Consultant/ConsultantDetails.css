@@ -811,3 +811,17 @@
   background-color: #0dcaf0 !important;
 }
 
+.btn-interview {
+  background-color: #6f42c1;
+  color: white;
+  border: none;
+  padding: 0.375rem 0.75rem;
+  border-radius: 0.25rem;
+  transition: background-color 0.2s;
+}
+
+.btn-interview:hover {
+  background-color: #5a32a3;
+  color: white;
+}
+

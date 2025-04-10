@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Axios from '../../services/api';
 import 'bootstrap/dist/css/bootstrap.min.css';
-import { BsChevronLeft, BsChevronRight, BsEye, BsLayoutThreeColumns, BsBriefcase, BsPeople, BsFileText } from 'react-icons/bs';
+import { BsChevronLeft, BsChevronRight, BsEye, BsLayoutThreeColumns, BsBriefcase, BsPeople, BsFileText, BsCalendarEvent } from 'react-icons/bs';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import './ConsultantDetails.css';
@@ -51,6 +51,28 @@ const ConsultantDetails = () => {
     coordinatorId: '',
     coordinator2Id: '',
     teamLeadId: ''
+  });
+
+  // Constants for interview form
+  const INTERVIEW_DURATIONS = ["30", "45", "60", "90"];
+  const INTERVIEW_ROUNDS = ["1st", "2nd", "3rd", "HR", "Final"];
+  const INTERVIEW_COUNTRIES = ["India", "Canada", "USA", "Germany", "Australia"];
+
+  const [showInterviewModal, setShowInterviewModal] = useState(false);
+  const [selectedConsultantForInterview, setSelectedConsultantForInterview] = useState(null);
+  const [jobs, setJobs] = useState([]);
+  const [interviewFormData, setInterviewFormData] = useState({
+    date: '',
+    timeEST: '',
+    duration: '60',
+    country: 'USA',
+    isVideo: false,
+    interviewSupportName: '',
+    round: '1st',
+    mode: '',
+    panelDetails: '',
+    comments: '',
+    otterLink: ''
   });
 
   useEffect(() => {
@@ -775,6 +797,115 @@ const ConsultantDetails = () => {
     }
   };
 
+  const calculateIST = (estTime) => {
+    // Add 9 hours and 30 minutes to EST to get IST
+    const [hours, minutes] = estTime.split(':');
+    let istHours = parseInt(hours) + 9;
+    let istMinutes = parseInt(minutes) + 30;
+    
+    if (istMinutes >= 60) {
+      istHours += 1;
+      istMinutes -= 60;
+    }
+    if (istHours >= 24) {
+      istHours -= 24;
+    }
+    
+    return `${istHours.toString().padStart(2, '0')}:${istMinutes.toString().padStart(2, '0')}`;
+  };
+
+  const handleTimeESTChange = (e) => {
+    const estTime = e.target.value;
+    const istTime = calculateIST(estTime);
+    setInterviewFormData(prev => ({
+      ...prev,
+      timeEST: estTime,
+      timeIST: istTime
+    }));
+  };
+
+  const handleInterviewModalOpen = (consultant) => {
+    setSelectedConsultantForInterview(consultant);
+    setInterviewFormData({
+      date: '',
+      timeEST: '',
+      duration: '60',
+      country: 'USA',
+      isVideo: false,
+      interviewSupportName: '',
+      round: '1st',
+      mode: '',
+      panelDetails: '',
+      comments: '',
+      otterLink: ''
+    });
+    setShowInterviewModal(true);
+  };
+
+  const handleInterviewSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      // Validate required fields
+      if (!interviewFormData.date || !interviewFormData.timeEST || !interviewFormData.interviewSupportName || !interviewFormData.mode) {
+        toast.error('Please fill in all required fields');
+        return;
+      }
+
+      // Validate duration
+      if (!INTERVIEW_DURATIONS.includes(interviewFormData.duration)) {
+        toast.error('Invalid duration selected');
+        return;
+      }
+
+      // Validate round
+      if (!INTERVIEW_ROUNDS.includes(interviewFormData.round)) {
+        toast.error('Invalid round selected');
+        return;
+      }
+
+      // Validate country
+      if (!INTERVIEW_COUNTRIES.includes(interviewFormData.country)) {
+        toast.error('Invalid country selected');
+        return;
+      }
+
+      const payload = {
+        date: interviewFormData.date,
+        timeEST: interviewFormData.timeEST + ':00',
+        duration: interviewFormData.duration,
+        country: interviewFormData.country,
+        isVideo: interviewFormData.isVideo,
+        interviewSupportName: interviewFormData.interviewSupportName,
+        round: interviewFormData.round,
+        mode: interviewFormData.mode,
+        panelDetails: interviewFormData.panelDetails || '',
+        comments: interviewFormData.comments || '',
+        otterLink: interviewFormData.otterLink || ''
+      };
+
+      await Axios.post(`/consultants/${selectedConsultantForInterview.id}/interviews`, payload);
+      toast.success('Interview scheduled successfully');
+      setShowInterviewModal(false);
+      
+      // Reset form
+      setInterviewFormData({
+        date: '',
+        timeEST: '',
+        duration: '60',
+        country: 'USA',
+        isVideo: false,
+        interviewSupportName: '',
+        round: '1st',
+        mode: '',
+        panelDetails: '',
+        comments: '',
+        otterLink: ''
+      });
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Failed to schedule interview');
+    }
+  };
+
   return (
     <div className="container">
       <ToastContainer />
@@ -922,13 +1053,24 @@ const ConsultantDetails = () => {
                         </button>
                       )}
                       {(userRole === 'superAdmin' || userRole === 'teamLead' || userRole === 'coordinator') && (
-                        <button
-                          className="btn btn-job"
-                          onClick={() => handleJobModalOpen(consultant.id)}
-                          title="Add Job Details"
-                        >
-                          <BsBriefcase />
-                        </button>
+                        <>
+                          <button
+                            className="btn btn-job"
+                            onClick={() => handleJobModalOpen(consultant.id)}
+                            title="Add Job Details"
+                          >
+                            <BsBriefcase />
+                          </button>
+                          {consultant.ConsultantJobDetail?.isJob && (
+                            <button
+                              className="btn btn-interview"
+                              onClick={() => handleInterviewModalOpen(consultant)}
+                              title="Schedule Interview"
+                            >
+                              <BsCalendarEvent />
+                            </button>
+                          )}
+                        </>
                       )}
                       {userRole === 'superAdmin' && (
                         <button
@@ -1309,6 +1451,156 @@ const ConsultantDetails = () => {
               </Button>
               <Button variant="primary" type="submit">
                 Assign Staff
+              </Button>
+            </div>
+          </Form>
+        </Modal.Body>
+      </Modal>
+
+      {/* Interview Modal */}
+      <Modal show={showInterviewModal} onHide={() => setShowInterviewModal(false)} size="lg">
+        <Modal.Header closeButton>
+          <Modal.Title>Schedule Interview</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <Form onSubmit={handleInterviewSubmit}>
+            <div className="row">
+              <div className="col-md-6">
+                <Form.Group className="mb-3">
+                  <Form.Label>Date *</Form.Label>
+                  <Form.Control
+                    type="date"
+                    value={interviewFormData.date}
+                    onChange={(e) => setInterviewFormData(prev => ({ ...prev, date: e.target.value }))}
+                    required
+                  />
+                </Form.Group>
+              </div>
+              <div className="col-md-6">
+                <Form.Group className="mb-3">
+                  <Form.Label>Time (EST) *</Form.Label>
+                  <Form.Control
+                    type="time"
+                    value={interviewFormData.timeEST}
+                    onChange={(e) => setInterviewFormData(prev => ({ ...prev, timeEST: e.target.value }))}
+                    required
+                  />
+                </Form.Group>
+              </div>
+            </div>
+
+            <div className="row">
+              <div className="col-md-4">
+                <Form.Group className="mb-3">
+                  <Form.Label>Duration (minutes) *</Form.Label>
+                  <Form.Select
+                    value={interviewFormData.duration}
+                    onChange={(e) => setInterviewFormData(prev => ({ ...prev, duration: e.target.value }))}
+                    required
+                  >
+                    {INTERVIEW_DURATIONS.map(duration => (
+                      <option key={duration} value={duration}>{duration}</option>
+                    ))}
+                  </Form.Select>
+                </Form.Group>
+              </div>
+              <div className="col-md-4">
+                <Form.Group className="mb-3">
+                  <Form.Label>Round *</Form.Label>
+                  <Form.Select
+                    value={interviewFormData.round}
+                    onChange={(e) => setInterviewFormData(prev => ({ ...prev, round: e.target.value }))}
+                    required
+                  >
+                    {INTERVIEW_ROUNDS.map(round => (
+                      <option key={round} value={round}>{round}</option>
+                    ))}
+                  </Form.Select>
+                </Form.Group>
+              </div>
+              <div className="col-md-4">
+                <Form.Group className="mb-3">
+                  <Form.Label>Country *</Form.Label>
+                  <Form.Select
+                    value={interviewFormData.country}
+                    onChange={(e) => setInterviewFormData(prev => ({ ...prev, country: e.target.value }))}
+                    required
+                  >
+                    {INTERVIEW_COUNTRIES.map(country => (
+                      <option key={country} value={country}>{country}</option>
+                    ))}
+                  </Form.Select>
+                </Form.Group>
+              </div>
+            </div>
+
+            <Form.Group className="mb-3">
+              <Form.Label>Mode *</Form.Label>
+              <Form.Control
+                type="text"
+                value={interviewFormData.mode}
+                onChange={(e) => setInterviewFormData(prev => ({ ...prev, mode: e.target.value }))}
+                required
+                placeholder="e.g., Google Meet, Zoom, etc."
+              />
+            </Form.Group>
+
+            <Form.Group className="mb-3">
+              <Form.Label>Interview Support Name *</Form.Label>
+              <Form.Control
+                type="text"
+                value={interviewFormData.interviewSupportName}
+                onChange={(e) => setInterviewFormData(prev => ({ ...prev, interviewSupportName: e.target.value }))}
+                required
+              />
+            </Form.Group>
+
+            <Form.Group className="mb-3">
+              <Form.Check
+                type="checkbox"
+                label="Video Interview"
+                checked={interviewFormData.isVideo}
+                onChange={(e) => setInterviewFormData(prev => ({ ...prev, isVideo: e.target.checked }))}
+              />
+            </Form.Group>
+
+            <Form.Group className="mb-3">
+              <Form.Label>Panel Details</Form.Label>
+              <Form.Control
+                type="text"
+                value={interviewFormData.panelDetails}
+                onChange={(e) => setInterviewFormData(prev => ({ ...prev, panelDetails: e.target.value }))}
+                placeholder="e.g., Technical Lead - Frontend Team"
+              />
+            </Form.Group>
+
+            <Form.Group className="mb-3">
+              <Form.Label>Comments</Form.Label>
+              <Form.Control
+                as="textarea"
+                rows={3}
+                value={interviewFormData.comments}
+                onChange={(e) => setInterviewFormData(prev => ({ ...prev, comments: e.target.value }))}
+                placeholder="Interview focus areas, special instructions, etc."
+              />
+            </Form.Group>
+
+            <Form.Group className="mb-3">
+              <Form.Label>Otter Link</Form.Label>
+              <Form.Control
+                type="text"
+                value={interviewFormData.otterLink}
+                onChange={(e) => setInterviewFormData(prev => ({ ...prev, otterLink: e.target.value }))}
+                placeholder="https://otter.ai/meeting/xyz"
+              />
+            </Form.Group>
+
+            <div className="d-flex justify-content-end gap-2">
+              <Button variant="secondary" onClick={() => setShowInterviewModal(false)}>
+                Cancel
+              </Button>
+              <Button variant="primary" type="submit">
+                Schedule Interview
               </Button>
             </div>
           </Form>

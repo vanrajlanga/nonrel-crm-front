@@ -13,7 +13,7 @@ import CompanyManagement from '../components/Company/CompanyManagement';
 import ConsultantJobDetails from '../components/Consultant/ConsultantJobDetails';
 import ConsultantAggrementDetails from '../components/Consultant/ConsultantAgreementDetails';
 import UserProfile from '../components/UserProfile/UserProfile';
-// import ConsultantInterviewDetails from '../components/Consultant/ConsultantInterviewDetails';
+import ConsultantInterviewDetails from '../components/Consultant/ConsultantInterviewDetails';
 // import ConsultantResumeBuilder from '../components/Consultant/ConsultantResumeBuilder';
 import Unauthorized from '../components/Unauthorized';
 import UserManagement from '../components/UserManagement/UserManagement';
@@ -125,23 +125,22 @@ const Router = () => {
             </PrivateRoute>
           }
         />
-        {/*
-        // <Route
-        //   path="/consultants/consultantInterviewDetails"
-        //   element={
-        //     <PrivateRoute allowedRoles={['superAdmin', 'team']}>
-        //       <ConsultantInterviewDetails />
-        //     </PrivateRoute>
-        //   }
-        // />
-        // <Route
+        <Route
+          path="/consultants/consultantInterviewDetails"
+          element={
+            <PrivateRoute allowedRoles={['superAdmin', 'coordinator','admin']}>
+              <ConsultantInterviewDetails />
+            </PrivateRoute>
+          }
+        />    
+        {/* <Route
         //   path="/consultants/consultantResumeBuilder"
         //   element={
         //     <PrivateRoute allowedRoles={['superAdmin', 'team']}>
         //       <ConsultantResumeBuilder />
         //     </PrivateRoute>
         //   }
-        // /> */}
+        // />  */}
         {/* Optionally add routes for login, signup, unauthorized, etc. */}
       </Routes>
     </>
