@@ -70,6 +70,13 @@ const ConsultantDetails = () => {
       setError(null);
       const res = await Axios.get('/consultants');
       
+      if (!res.data || res.data.length === 0) {
+        setConsultants([]);
+        setFilteredConsultants([]);
+        setLoading(false);
+        return;
+      }
+
       // Get all possible field names from the first consultant
       const allFields = res.data.length > 0 
         ? Object.keys(res.data[0])
@@ -123,6 +130,10 @@ const ConsultantDetails = () => {
 
         return {
           ...consultant,
+          isJob: consultant.ConsultantJobDetail?.isJob || false,
+          isPlaced: consultant.isPlaced || false,
+          isHold: consultant.isHold || false,
+          isActive: consultant.isActive || false,
           fields,
           allFields: [...allFields.filter(field => field !== 'coordinators'), 'coordinator1', 'coordinator2']
         };
@@ -217,9 +228,14 @@ const ConsultantDetails = () => {
       setVisibleColumns(initialColumns);
     } catch (error) {
       console.error('Error fetching consultants:', error);
-      const errorMessage = error.response?.data?.message || 'Failed to fetch consultants';
-      setError(errorMessage);
-      toast.error(errorMessage);
+      if (error.response?.status === 404) {
+        setConsultants([]);
+        setFilteredConsultants([]);
+      } else {
+        const errorMessage = error.response?.data?.message || 'Failed to fetch consultants';
+        setError(errorMessage);
+        toast.error(errorMessage);
+      }
     } finally {
       setLoading(false);
     }
@@ -485,18 +501,10 @@ const ConsultantDetails = () => {
       const selectedCompany = companies.find(company => company.id.toString() === jobFormData.companyId.toString());
       const selectedJob = selectedCompanyJobs.find(job => job.id.toString() === jobFormData.jobId.toString());
 
-      if (!selectedCompany) {
-        toast.error('Please select a valid company');
+      if (!selectedCompany || !selectedJob) {
+        toast.error('Please select valid company and job position');
         return;
       }
-
-      if (!selectedJob) {
-        toast.error('Please select a valid job position');
-        return;
-      }
-
-      console.log('Selected company:', selectedCompany);
-      console.log('Selected job:', selectedJob);
 
       const payload = {
         companyName: selectedCompany.companyName,
@@ -504,22 +512,63 @@ const ConsultantDetails = () => {
         dateOfOffer: jobFormData.dateOfOffer
       };
 
-      console.log('Submitting job details:', payload);
+      console.log('Submitting job with payload:', payload);
+      console.log('Selected consultant ID:', selectedConsultantId);
 
-      await Axios.post(`/consultants/${selectedConsultantId}/job-details`, payload);
+      const response = await Axios.post(`/consultants/${selectedConsultantId}/job-details`, payload);
       
-      toast.success('Job details added successfully');
-      setShowJobModal(false);
-      setJobFormData({
-        companyId: '',
-        jobId: '',
-        dateOfOffer: '',
-        jobType: ''
-      });
-      // Refresh the consultant list
-      loadConsultants();
+      console.log('Job creation response:', response.data);
+      
+      if (response.data) {
+        // Update the local state to reflect job creation using the response data
+        const updatedConsultants = consultants.map(consultant => {
+          if (consultant.id === selectedConsultantId) {
+            const jobDetails = response.data.jobDetails;
+            console.log('Updating consultant with job details:', {
+              consultantId: consultant.id,
+              currentIsJob: consultant.isJob,
+              newJobDetails: jobDetails
+            });
+            
+            const updatedConsultant = {
+              ...consultant,
+              isJob: true,
+              isPlaced: jobDetails.consultant.isPlaced,
+              isHold: jobDetails.consultant.isHold,
+              isActive: jobDetails.consultant.isActive,
+              companyName: jobDetails.companyName,
+              position: jobDetails.position,
+              dateOfOffer: jobDetails.dateOfOffer,
+              feesStatus: jobDetails.feesStatus,
+              isAgreement: jobDetails.isAgreement,
+              feesInfo: jobDetails.feesInfo,
+              jobDetails: {
+                ...jobDetails,
+                isJob: true
+              }
+            };
+            
+            console.log('Updated consultant state:', updatedConsultant);
+            return updatedConsultant;
+          }
+          return consultant;
+        });
+
+        console.log('Updated consultants array:', updatedConsultants);
+        setConsultants(updatedConsultants);
+        setFilteredConsultants(updatedConsultants);
+        toast.success(response.data.message);
+        setShowJobModal(false);
+        setJobFormData({
+          companyId: '',
+          jobId: '',
+          dateOfOffer: '',
+          jobType: ''
+        });
+      }
     } catch (error) {
-      console.error('Error submitting job details:', error.response || error);
+      console.error('Error submitting job details:', error);
+      console.error('Error response:', error.response?.data);
       toast.error(error.response?.data?.message || 'Failed to add job details');
     }
   };
@@ -690,6 +739,42 @@ const ConsultantDetails = () => {
     }
   };
 
+  // Add this function to handle placement status update
+  const handlePlacementStatusUpdate = async (consultantId, newStatus) => {
+    if (!consultantId) {
+      toast.error('Invalid consultant ID');
+      return;
+    }
+
+    try {
+      const response = await Axios.put(`/consultants/${consultantId}/placement-status`, {
+        placementStatus: newStatus
+      });
+
+      if (response.data) {
+        // Update the local state with the response data
+        const updatedConsultants = consultants.map(consultant => {
+          if (consultant.id === consultantId) {
+            return {
+              ...consultant,
+              isPlaced: response.data.jobDetails.consultant.isPlaced,
+              isHold: response.data.jobDetails.consultant.isHold,
+              isActive: response.data.jobDetails.consultant.isActive
+            };
+          }
+          return consultant;
+        });
+
+        setConsultants(updatedConsultants);
+        setFilteredConsultants(updatedConsultants);
+        toast.success(response.data.message);
+      }
+    } catch (error) {
+      console.error('Error updating placement status:', error);
+      toast.error(error.response?.data?.message || 'Failed to update placement status');
+    }
+  };
+
   return (
     <div className="container">
       <ToastContainer />
@@ -801,6 +886,9 @@ const ConsultantDetails = () => {
           <thead>
             <tr>
               <th className="header-cell">Actions</th>
+              {consultants.some(consultant => consultant.ConsultantJobDetail?.isJob) && (
+                <th className="header-cell">Placement Status</th>
+              )}
               {consultants[0]?.fields
                 .filter(field => visibleColumns[field.fieldName])
                 .map((field, index) => (
@@ -813,178 +901,221 @@ const ConsultantDetails = () => {
             </tr>
           </thead>
           <tbody>
-            {currentConsultants.map((consultant) => (
-              <tr key={consultant.id} className="consultant-row">
-                <td className="data-cell">
-                  <div className="action-buttons-Details">
-                    {userRole === 'superAdmin' && (
-                      <button
-                        className="btn btn-view"
-                        onClick={() => handleConsultantClick(consultant.id)}
-                      >
-                        <BsEye />
-                      </button>
-                    )}
-                    {(userRole === 'superAdmin' || userRole === 'teamLead' || userRole === 'coordinator') && (
-                      consultant.isPlaced ? (
-                        <span className="badge placement-success">
-                          <BsBriefcase />
-                        </span>
-                      ) : (
+            {currentConsultants.map((consultant) => {
+              console.log('Rendering consultant:', {
+                id: consultant.id,
+                isJob: consultant.isJob,
+                jobDetails: consultant.jobDetails,
+                placementStatus: consultant.isPlaced ? 'placed' : consultant.isHold ? 'hold' : 'active'
+              });
+              
+              return (
+                <tr key={consultant.id} className="consultant-row">
+                  <td className="data-cell">
+                    <div className="action-buttons-Details">
+                      {userRole === 'superAdmin' && (
+                        <button
+                          className="btn btn-view"
+                          onClick={() => handleConsultantClick(consultant.id)}
+                        >
+                          <BsEye />
+                        </button>
+                      )}
+                      {(userRole === 'superAdmin' || userRole === 'teamLead' || userRole === 'coordinator') && (
                         <button
                           className="btn btn-job"
                           onClick={() => handleJobModalOpen(consultant.id)}
+                          title="Add Job Details"
                         >
                           <BsBriefcase />
                         </button>
-                      )
-                    )}
-                    {userRole === 'superAdmin' && (
-                      <button
-                        className="btn btn-staff"
-                        onClick={() => handleStaffModalOpen(consultant.id)}
-                        title="Assign Staff"
-                      >
-                        <BsPeople />
-                      </button>
-                    )}
-                    {userRole === 'resumeBuilder' && (
-                      <>
-                        {consultant.assignedResumeBuilder ? (
-                          <button
-                            className="btn btn-disassign-me"
-                            onClick={() => handleDisassignResumeBuilder(consultant.id)}
-                            title="Disassign ME"
-                          >
-                            <BsFileText /> Disassign ME
-                          </button>
-                        ) : (
-                          <button
-                            className="btn btn-assign-me"
-                            onClick={() => handleAssignResumeBuilder(consultant.id)}
-                            title="Assign ME"
-                          >
-                            <BsFileText /> Assign ME
-                          </button>
-                        )}
-                        {consultant.assignedResumeBuilder && (
-                          <button
-                            className="btn btn-upload-resume"
-                            onClick={() => handleUploadResume(consultant.id)}
-                            title="Upload Resume"
-                          >
-                            <BsFileText /> Upload
-                          </button>
-                        )}
-                      </>
-                    )}
-                  </div>
-                </td>
-                {consultant.fields
-                  .filter(field => visibleColumns[field.fieldName])
-                  .map((field, index) => (
-                    <td key={index} className="data-cell">
-                      {field.fieldName.toLowerCase() === 'coordinator' ? (
-                        <div style={{ whiteSpace: 'pre-line' }}>
-                          {field.value || '----'}
-                        </div>
-                      ) : field.fieldName === 'payment status' ? (
-                        <span className={`badge ${field.value ? 'payment-verified' : 'payment-pending'}`}>
-                          {field.value ? 'Verified' : 'Pending'}
-                        </span>
-                      ) : field.fieldName.toLowerCase() === 'resumestatus' ? (
-                        <span className={`badge ${field.value?.toLowerCase() === 'accepted' ? 'resume-accepted' : 
-                                          field.value?.toLowerCase() === 'rejected' ? 'resume-rejected' : 
-                                          'resume-not-built'}`}>
-                          {field.value?.replace('_', ' ')}
-                        </span>
-                      ) : field.fieldName.toLowerCase() === 'resumefile' ? (
-                        field.value ? (
-                          <button
-                            className="btn btn-view-resume"
-                            onClick={async () => {
-                              try {
-                                const response = await Axios.get(`/consultants/${consultant.id}/resume`, {
-                                  responseType: 'blob'
-                                });
-                                
-                                const url = window.URL.createObjectURL(new Blob([response.data], { type: 'application/pdf' }));
-                                const newWindow = window.open(url, '_blank');
-                                if (!newWindow) {
-                                  toast.error('Please allow popups to view the resume');
-                                }
-                              } catch (error) {
-                                console.error('Error fetching resume:', error);
-                                if (error.response?.status === 403) {
-                                  toast.error('You are not authorized to view this resume');
-                                } else if (error.response?.status === 404) {
-                                  toast.error('No resume found for this consultant');
-                                } else {
-                                  toast.error('Failed to fetch resume. Please try again.');
-                                }
+                      )}
+                      {userRole === 'superAdmin' && (
+                        <button
+                          className="btn btn-staff"
+                          onClick={() => handleStaffModalOpen(consultant.id)}
+                          title="Assign Staff"
+                        >
+                          <BsPeople />
+                        </button>
+                      )}
+                      {userRole === 'resumeBuilder' && (
+                        <>
+                          {consultant.assignedResumeBuilder ? (
+                            <button
+                              className="btn btn-disassign-me"
+                              onClick={() => handleDisassignResumeBuilder(consultant.id)}
+                              title="Disassign ME"
+                            >
+                              <BsFileText /> Disassign ME
+                            </button>
+                          ) : (
+                            <button
+                              className="btn btn-assign-me"
+                              onClick={() => handleAssignResumeBuilder(consultant.id)}
+                              title="Assign ME"
+                            >
+                              <BsFileText /> Assign ME
+                            </button>
+                          )}
+                          {consultant.assignedResumeBuilder && (
+                            <button
+                              className="btn btn-upload-resume"
+                              onClick={() => handleUploadResume(consultant.id)}
+                              title="Upload Resume"
+                            >
+                              <BsFileText /> Upload
+                            </button>
+                          )}
+                        </>
+                      )}
+                    </div>
+                  </td>
+                  {consultants.some(consultant => consultant.ConsultantJobDetail?.isJob) && (
+                    <td className="data-cell">
+                      {consultant.ConsultantJobDetail?.isJob ? (
+                        (userRole === 'superAdmin' || userRole === 'teamLead' || userRole === 'coordinator') ? (
+                          <div className="placement-status-dropdown">
+                            <select
+                              className={`form-select form-select-sm ${
+                                consultant.isPlaced ? 'status-placed' :
+                                consultant.isHold ? 'status-hold' :
+                                'status-active'
+                              }`}
+                              value={
+                                consultant.isPlaced ? 'placed' :
+                                consultant.isHold ? 'hold' :
+                                'active'
                               }
-                            }}
-                          >
-                            <BsEye /> View Resume
-                          </button>
+                              onChange={(e) => handlePlacementStatusUpdate(consultant.id, e.target.value)}
+                            >
+                              <option value="placed">Placed</option>
+                              <option value="hold">Hold</option>
+                              <option value="active">Active</option>
+                            </select>
+                          </div>
                         ) : (
-                          <span className="text-muted">No resume uploaded</span>
+                          <span className={`badge px-3 py-2 ${
+                            consultant.isPlaced ? 'bg-success' : 
+                            consultant.isHold ? 'bg-warning' : 
+                            'bg-info'
+                          }`}>
+                            {consultant.isPlaced ? 'Placed' : 
+                             consultant.isHold ? 'Hold' : 
+                             'Active'}
+                          </span>
                         )
-                      ) : field.fieldName.toLowerCase() === 'documentverificationstatus' ? (
-                        <span className={`badge ${field.value?.toLowerCase() === 'verified' ? 'bg-success' : 'bg-warning'}`}>
-                          {field.value?.charAt(0).toUpperCase() + field.value?.slice(1).toLowerCase()}
-                        </span>
-                      ) : field.fieldName.toLowerCase().includes('document') && 
-                          !field.fieldName.toLowerCase().includes('verificationstatus') ? (
-                        field.value ? (
-                          <button
-                            className="btn btn-view-document"
-                            onClick={async () => {
-                              try {
-                                const documentNumber = field.fieldName.toLowerCase().replace('document', '');
-                                const response = await Axios.get(`/consultants/${consultant.id}/documents/document${documentNumber}`, {
-                                  responseType: 'blob'
-                                });
-                                
-                                const url = window.URL.createObjectURL(new Blob([response.data], { type: 'application/pdf' }));
-                                const newWindow = window.open(url, '_blank');
-                                if (!newWindow) {
-                                  toast.error('Please allow popups to view the document');
-                                }
-                              } catch (error) {
-                                console.error('Error fetching document:', error);
-                                if (error.response?.status === 403) {
-                                  toast.error('You are not authorized to view this document');
-                                } else if (error.response?.status === 404) {
-                                  toast.error('Document not found');
-                                } else {
-                                  toast.error('Failed to fetch document. Please try again.');
-                                }
-                              }
-                            }}
-                          >
-                            <BsEye /> View
-                          </button>
-                        ) : (
-                          <span className="text-muted">Not uploaded</span>
-                        )
-                      ) : typeof field.value === 'boolean' ? (
-                        <span className={`badge ${field.value ? 'bg-success' : 'bg-secondary'}`}>
-                          {field.value ? 'Yes' : 'No'}
-                        </span>
-                      ) : !field.value && field.value !== 0 ? (
-                        <span className="text-muted">----</span>
-                      ) : field.fieldName.toLowerCase().includes('date') ? (
-                        formatDate(field.value)
-                      ) : typeof field.value === 'object' && field.value !== null ? (
-                        field.value.username || field.value.name || JSON.stringify(field.value)
                       ) : (
-                        String(field.value)
+                        <span className="text-muted">No Job</span>
                       )}
                     </td>
-                ))}
-              </tr>
-            ))}
+                  )}
+                  {consultant.fields
+                    .filter(field => visibleColumns[field.fieldName])
+                    .map((field, index) => (
+                      <td key={index} className="data-cell">
+                        {field.fieldName.toLowerCase() === 'coordinator' ? (
+                          <div style={{ whiteSpace: 'pre-line' }}>
+                            {field.value || '----'}
+                          </div>
+                        ) : field.fieldName === 'payment status' ? (
+                          <span className={`badge ${field.value ? 'payment-verified' : 'payment-pending'}`}>
+                            {field.value ? 'Verified' : 'Pending'}
+                          </span>
+                        ) : field.fieldName.toLowerCase() === 'resumestatus' ? (
+                          <span className={`badge ${field.value?.toLowerCase() === 'accepted' ? 'resume-accepted' : 
+                                            field.value?.toLowerCase() === 'rejected' ? 'resume-rejected' : 
+                                            'resume-not-built'}`}>
+                            {field.value?.replace('_', ' ')}
+                          </span>
+                        ) : field.fieldName.toLowerCase() === 'resumefile' ? (
+                          field.value ? (
+                            <button
+                              className="btn btn-view-resume"
+                              onClick={async () => {
+                                try {
+                                  const response = await Axios.get(`/consultants/${consultant.id}/resume`, {
+                                    responseType: 'blob'
+                                  });
+                                  
+                                  const url = window.URL.createObjectURL(new Blob([response.data], { type: 'application/pdf' }));
+                                  const newWindow = window.open(url, '_blank');
+                                  if (!newWindow) {
+                                    toast.error('Please allow popups to view the resume');
+                                  }
+                                } catch (error) {
+                                  console.error('Error fetching resume:', error);
+                                  if (error.response?.status === 403) {
+                                    toast.error('You are not authorized to view this resume');
+                                  } else if (error.response?.status === 404) {
+                                    toast.error('No resume found for this consultant');
+                                  } else {
+                                    toast.error('Failed to fetch resume. Please try again.');
+                                  }
+                                }
+                              }}
+                            >
+                              <BsEye /> View Resume
+                            </button>
+                          ) : (
+                            <span className="text-muted">No resume uploaded</span>
+                          )
+                        ) : field.fieldName.toLowerCase() === 'documentverificationstatus' ? (
+                          <span className={`badge ${field.value?.toLowerCase() === 'verified' ? 'bg-success' : 'bg-warning'}`}>
+                            {field.value?.charAt(0).toUpperCase() + field.value?.slice(1).toLowerCase()}
+                          </span>
+                        ) : field.fieldName.toLowerCase().includes('document') && 
+                            !field.fieldName.toLowerCase().includes('verificationstatus') ? (
+                          field.value ? (
+                            <button
+                              className="btn btn-view-document"
+                              onClick={async () => {
+                                try {
+                                  const documentNumber = field.fieldName.toLowerCase().replace('document', '');
+                                  const response = await Axios.get(`/consultants/${consultant.id}/documents/document${documentNumber}`, {
+                                    responseType: 'blob'
+                                  });
+                                  
+                                  const url = window.URL.createObjectURL(new Blob([response.data], { type: 'application/pdf' }));
+                                  const newWindow = window.open(url, '_blank');
+                                  if (!newWindow) {
+                                    toast.error('Please allow popups to view the document');
+                                  }
+                                } catch (error) {
+                                  console.error('Error fetching document:', error);
+                                  if (error.response?.status === 403) {
+                                    toast.error('You are not authorized to view this document');
+                                  } else if (error.response?.status === 404) {
+                                    toast.error('Document not found');
+                                  } else {
+                                    toast.error('Failed to fetch document. Please try again.');
+                                  }
+                                }
+                              }}
+                            >
+                              <BsEye /> View
+                            </button>
+                          ) : (
+                            <span className="text-muted">Not uploaded</span>
+                          )
+                        ) : typeof field.value === 'boolean' ? (
+                          <span className={`badge ${field.value ? 'bg-success' : 'bg-secondary'}`}>
+                            {field.value ? 'Yes' : 'No'}
+                          </span>
+                        ) : !field.value && field.value !== 0 ? (
+                          <span className="text-muted">----</span>
+                        ) : field.fieldName.toLowerCase().includes('date') ? (
+                          formatDate(field.value)
+                        ) : typeof field.value === 'object' && field.value !== null ? (
+                          field.value.username || field.value.name || JSON.stringify(field.value)
+                        ) : (
+                          String(field.value)
+                        )}
+                      </td>
+                  ))}
+                </tr>
+              );
+            })}
             
             {currentConsultants.length === 0 && (
               <tr>

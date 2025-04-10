@@ -762,3 +762,52 @@
   font-size: 1rem;
 }
 
+.placement-status-dropdown select {
+  font-weight: 500;
+  border-radius: 4px;
+  padding: 6px 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-width: 120px;
+}
+
+.status-placed {
+  background-color: #198754 !important;
+  border-color: #198754 !important;
+  color: white !important;
+}
+
+.status-hold {
+  background-color: #ffc107 !important;
+  border-color: #ffc107 !important;
+  color: black !important;
+}
+
+.status-active {
+  background-color: #0dcaf0 !important;
+  border-color: #0dcaf0 !important;
+  color: white !important;
+}
+
+.placement-status-dropdown select:focus {
+  box-shadow: none;
+}
+
+.badge {
+  font-weight: 500;
+  font-size: 0.875rem;
+}
+
+.bg-success {
+  background-color: #198754 !important;
+}
+
+.bg-warning {
+  background-color: #ffc107 !important;
+  color: black !important;
+}
+
+.bg-info {
+  background-color: #0dcaf0 !important;
+}
+

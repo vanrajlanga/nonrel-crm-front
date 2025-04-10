@@ -167,17 +167,15 @@ const SingleConsultant = () => {
 	// Add new function for handling undo placement
 	const handleUndoPlacement = async () => {
 		try {
-			await Axios.put(`/consultants/${id}/job-details`, {
-				undoPlacement: true,
-			});
+			await Axios.delete(`/consultants/${id}/job-details`);
 			setShowUndoModal(false);
 			// Refresh consultant data
 			const response = await Axios.get(`/consultants/${id}`);
 			setConsultant(response.data);
-			toast.success("Placement undone successfully");
+			toast.success("Job details removed successfully");
 		} catch (err) {
-			console.error("Error undoing placement:", err);
-			toast.error(err.response?.data?.message || "Failed to undo placement");
+			console.error("Error removing job details:", err);
+			toast.error(err.response?.data?.message || "Failed to remove job details");
 		}
 	};
 
@@ -189,11 +187,7 @@ const SingleConsultant = () => {
 	const handleJobSubmit = async (e) => {
 		e.preventDefault();
 
-		if (
-			!jobFormData.companyName ||
-			!jobFormData.jobType ||
-			!jobFormData.dateOfOffer
-		) {
+		if (!jobFormData.companyName || !jobFormData.jobType || !jobFormData.dateOfOffer) {
 			toast.error("Please fill in all required fields");
 			return;
 		}
@@ -213,6 +207,18 @@ const SingleConsultant = () => {
 
 			console.log("Job details response:", response.data);
 
+			// Update the consultant state with the new job details
+			setConsultant(prevConsultant => ({
+				...prevConsultant,
+				ConsultantJobDetail: {
+					...response.data.jobDetails,
+					isJob: true
+				},
+				isPlaced: response.data.jobDetails.consultant.isPlaced,
+				isHold: response.data.jobDetails.consultant.isHold,
+				isActive: response.data.jobDetails.consultant.isActive
+			}));
+
 			toast.success("Job details added successfully");
 			setShowModal(false);
 
@@ -227,19 +233,13 @@ const SingleConsultant = () => {
 				feesStatus: "pending",
 			});
 
-			// Refresh consultant data
-			const consultantResponse = await Axios.get(`/consultants/${id}`);
-			setConsultant(consultantResponse.data);
 		} catch (error) {
 			console.error("Error submitting job details:", error.response || error);
-			const errorMessage =
-				error.response?.data?.message || "Failed to add job details";
+			const errorMessage = error.response?.data?.message || "Failed to add job details";
 			toast.error(errorMessage);
 
 			if (error.response?.data?.missingFields) {
-				toast.error(
-					`Missing fields: ${error.response.data.missingFields.join(", ")}`
-				);
+				toast.error(`Missing fields: ${error.response.data.missingFields.join(", ")}`);
 			}
 		}
 	};
@@ -272,7 +272,7 @@ const SingleConsultant = () => {
 								<BiUndo /> Undo Payment
 							</button>
 						)}
-						{consultant?.isPlaced && (
+						{consultant?.ConsultantJobDetail?.isJob && (
 							<button
 								className="btn btn-warning action-btn"
 								onClick={() => openUndoModal("placement")}
