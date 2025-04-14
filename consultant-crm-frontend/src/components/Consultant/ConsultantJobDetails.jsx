@@ -71,25 +71,22 @@ const ConsultantJobDetails = () => {
           isAgreement: detail.isAgreement || false
         }));
 
-        // For each consultant, check if they have an agreement
+        // For each consultant, check if they have an agreement only if isAgreement is true
         const agreementChecks = jobDetailsData.map(async (consultant) => {
-          try {
-            const agreementResponse = await Axios.get(`/consultants/${consultant.consultantId}/agreement`);
-            return {
-              ...consultant,
-              isAgreement: agreementResponse.data ? true : false
-            };
-          } catch (error) {
-            // If 404, no agreement exists
-            if (error.response?.status === 404) {
+          if (consultant.isAgreement) {
+            try {
+              const agreementResponse = await Axios.get(`/consultants/${consultant.consultantId}/agreement`);
               return {
                 ...consultant,
-                isAgreement: false
+                isAgreement: true,
+                agreement: agreementResponse.data.agreement
               };
+            } catch (error) {
+              console.error(`Error fetching agreement for consultant ${consultant.consultantId}:`, error);
+              return consultant;
             }
-            // For other errors, keep the existing isAgreement value
-            return consultant;
           }
+          return consultant;
         });
 
         // Wait for all agreement checks to complete
@@ -101,29 +98,43 @@ const ConsultantJobDetails = () => {
           consultantsResponse.data.filter(consultant => consultant.isPlaced === true) : [];
         
         // Fetch job details only for placed consultants
-        const jobDetailsPromises = placedConsultants.map(consultant =>
-          Axios.get(`/consultants/${consultant.id}/job-details`)
-            .then(response => ({
+        const jobDetailsPromises = placedConsultants.map(async consultant => {
+          try {
+            const jobDetailsResponse = await Axios.get(`/consultants/${consultant.id}/job-details`);
+            const jobDetails = jobDetailsResponse.data;
+            
+            let agreementData = null;
+            if (jobDetails.isAgreement) {
+              try {
+                const agreementResponse = await Axios.get(`/consultants/${consultant.id}/agreement`);
+                agreementData = agreementResponse.data.agreement;
+              } catch (agreementError) {
+                console.error(`Error fetching agreement for consultant ${consultant.id}:`, agreementError);
+              }
+            }
+
+            return {
               consultantId: consultant.id,
               fullName: consultant.fulllegalname,
               email: consultant.email,
-              companyName: response.data.companyName,
-              position: response.data.position || response.data.jobType,
-              dateOfOffer: response.data.dateOfOffer,
-              createdBy: response.data.createdBy,
-              feesInfo: response.data.feesInfo || {
-                totalFees: response.data.totalFees || 0,
-                receivedFees: response.data.receivedFees || 0,
-                remainingFees: response.data.remainingFees || 0
+              companyName: jobDetails.companyName,
+              position: jobDetails.position || jobDetails.jobType,
+              dateOfOffer: jobDetails.dateOfOffer,
+              createdBy: jobDetails.createdBy,
+              feesInfo: jobDetails.feesInfo || {
+                totalFees: jobDetails.totalFees || 0,
+                receivedFees: jobDetails.receivedFees || 0,
+                remainingFees: jobDetails.remainingFees || 0
               },
-              feesStatus: response.data.feesStatus || 'pending',
-              isAgreement: response.data.isAgreement || false
-            }))
-            .catch(error => {
-              console.error(`Error fetching job details for consultant ${consultant.id}:`, error);
-              return null;
-            })
-        );
+              feesStatus: jobDetails.feesStatus || 'pending',
+              isAgreement: jobDetails.isAgreement || false,
+              agreement: agreementData
+            };
+          } catch (error) {
+            console.error(`Error fetching job details for consultant ${consultant.id}:`, error);
+            return null;
+          }
+        });
 
         const results = await Promise.all(jobDetailsPromises);
         jobDetailsData = results.filter(result => result !== null);
