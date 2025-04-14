@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import Axios from '../../services/api';
-import { toast, ToastContainer } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
+import Toast from '../common/Toast';
 import { BsChevronLeft, BsChevronRight } from 'react-icons/bs';
 import Filter from '../Filter';
 import './ConsultantJobDetails.css';
@@ -138,8 +137,9 @@ const ConsultantAgreementDetails = () => {
       ]);
     } catch (error) {
       console.error('Error fetching agreements:', error);
-      setError('Failed to fetch agreements. Please try again.');
-      toast.error('Failed to fetch agreements');
+      const errorMessage = error.response?.data?.message || 'Failed to fetch agreements';
+      setError(errorMessage);
+      Toast.error('Failed to fetch agreements');
     } finally {
       setLoading(false);
     }
@@ -278,9 +278,28 @@ const ConsultantAgreementDetails = () => {
   const handlePaymentUpdate = async (e) => {
     e.preventDefault();
     try {
+      // Validate amount
+      const monthlyPaymentAmount = selectedAgreement.monthlyPaymentAmount;
+      const receivedAmount = parseFloat(paymentData.amount);
+      
+      if (receivedAmount > monthlyPaymentAmount) {
+        Toast.error(`Amount cannot exceed monthly payment amount of $${monthlyPaymentAmount}`);
+        return;
+      }
+
+      // Validate received date
+      const receivedDate = new Date(paymentData.receivedDate);
+      const currentDate = new Date();
+      currentDate.setHours(0, 0, 0, 0); // Reset time part for accurate date comparison
+      
+      if (receivedDate > currentDate) {
+        Toast.error('Received date cannot be a future date');
+        return;
+      }
+
       const response = await Axios.put(`/agreement-details/${selectedAgreement.id}/payment`, {
         monthNumber: parseInt(paymentData.month),
-        amountReceived: parseFloat(paymentData.amount),
+        amountReceived: receivedAmount,
         receivedDate: paymentData.receivedDate,
         notes: paymentData.notes
       });
@@ -291,12 +310,12 @@ const ConsultantAgreementDetails = () => {
           if (agreement.id === selectedAgreement.id) {
             return {
               ...agreement,
-              [`month${paymentData.month}AmountReceived`]: parseFloat(paymentData.amount),
+              [`month${paymentData.month}AmountReceived`]: receivedAmount,
               [`month${paymentData.month}ReceivedDate`]: paymentData.receivedDate,
               [`month${paymentData.month}Notes`]: paymentData.notes,
               [`month${paymentData.month}Status`]: 'paid',
-              totalPaidSoFar: agreement.totalPaidSoFar + parseFloat(paymentData.amount),
-              remainingBalance: agreement.remainingBalance - parseFloat(paymentData.amount)
+              totalPaidSoFar: agreement.totalPaidSoFar + receivedAmount,
+              remainingBalance: agreement.remainingBalance - receivedAmount
             };
           }
           return agreement;
@@ -305,11 +324,11 @@ const ConsultantAgreementDetails = () => {
         setAgreements(updatedAgreements);
         setFilteredAgreements(updatedAgreements);
         setShowPaymentModal(false);
-        toast.success('Payment updated successfully');
+        Toast.success('Payment updated successfully');
       }
     } catch (error) {
       console.error('Error updating payment:', error);
-      toast.error(error.response?.data?.message || 'Error updating payment');
+      Toast.error(error.response?.data?.message || 'Error updating payment');
     }
   };
 
@@ -336,17 +355,17 @@ const ConsultantAgreementDetails = () => {
         setAgreements(updatedAgreements);
         setFilteredAgreements(updatedAgreements);
         setShowJobLostModal(false);
-        toast.success('Job lost date updated successfully');
+        Toast.success('Job lost date updated successfully');
       }
     } catch (error) {
       console.error('Error updating job lost date:', error);
-      toast.error(error.response?.data?.message || 'Error updating job lost date');
+      Toast.error(error.response?.data?.message || 'Error updating job lost date');
     }
   };
 
   return (
     <div className="container">
-      <ToastContainer />
+      <Toast.ToastContainer />
       <div className="consultant-header text-center">
         <h2 className="display-6 fw-bold mb-3">
             Placement Fee

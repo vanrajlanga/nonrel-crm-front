@@ -2,8 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import Axios from '../../services/api';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import { BsChevronLeft, BsChevronRight, BsEye, BsLayoutThreeColumns, BsBriefcase, BsPeople, BsFileText, BsCalendarEvent } from 'react-icons/bs';
-import { toast, ToastContainer } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
+import Toast from '../common/Toast';
 import './ConsultantDetails.css';
 import { useNavigate } from 'react-router-dom';
 import Filter from '../Filter';
@@ -78,7 +77,7 @@ const ConsultantDetails = () => {
   useEffect(() => {
     const role = localStorage.getItem('role');
     if (role !== 'superAdmin' && role !== 'coordinator' && role !== 'teamLead' && role !== 'resumeBuilder') {
-      toast.error('Access forbidden: insufficient privileges');
+      Toast.error('Access forbidden: insufficient privileges');
       navigate('/');
       return;
     }
@@ -256,7 +255,7 @@ const ConsultantDetails = () => {
       } else {
         const errorMessage = error.response?.data?.message || 'Failed to fetch consultants';
         setError(errorMessage);
-        toast.error(errorMessage);
+        Toast.error(errorMessage);
       }
     } finally {
       setLoading(false);
@@ -471,7 +470,7 @@ const ConsultantDetails = () => {
 
       const selectedCompany = companies.find(company => company.id.toString() === companyId.toString());
       if (!selectedCompany) {
-        toast.error('Invalid company selected');
+        Toast.error('Invalid company selected');
         return;
       }
 
@@ -487,7 +486,7 @@ const ConsultantDetails = () => {
       setSelectedCompanyJobs(response.data || []);
     } catch (error) {
       console.error('Error fetching jobs:', error.response || error);
-      toast.error(error.response?.data?.message || 'Failed to load jobs for this company. Please ensure the company exists and try again.');
+      Toast.error(error.response?.data?.message || 'Failed to load jobs for this company. Please ensure the company exists and try again.');
       setSelectedCompanyJobs([]);
     }
   };
@@ -507,7 +506,7 @@ const ConsultantDetails = () => {
       setCompanies(response.data);
       setShowJobModal(true);
     } catch (error) {
-      toast.error('Failed to load companies');
+      Toast.error('Failed to load companies');
     }
   };
 
@@ -515,7 +514,7 @@ const ConsultantDetails = () => {
     e.preventDefault();
     
     if (!jobFormData.companyId || !jobFormData.jobId || !jobFormData.dateOfOffer) {
-      toast.error('Please fill in all required fields');
+      Toast.error('Please fill in all required fields');
       return;
     }
 
@@ -524,7 +523,7 @@ const ConsultantDetails = () => {
       const selectedJob = selectedCompanyJobs.find(job => job.id.toString() === jobFormData.jobId.toString());
 
       if (!selectedCompany || !selectedJob) {
-        toast.error('Please select valid company and job position');
+        Toast.error('Please select valid company and job position');
         return;
       }
 
@@ -558,6 +557,7 @@ const ConsultantDetails = () => {
               isPlaced: jobDetails.consultant.isPlaced,
               isHold: jobDetails.consultant.isHold,
               isActive: jobDetails.consultant.isActive,
+              isOfferPending: jobDetails.consultant.isOfferPending,
               companyName: jobDetails.companyName,
               position: jobDetails.position,
               dateOfOffer: jobDetails.dateOfOffer,
@@ -579,7 +579,7 @@ const ConsultantDetails = () => {
         console.log('Updated consultants array:', updatedConsultants);
         setConsultants(updatedConsultants);
         setFilteredConsultants(updatedConsultants);
-        toast.success(response.data.message);
+        Toast.success(response.data.message);
         setShowJobModal(false);
         setJobFormData({
           companyId: '',
@@ -591,7 +591,7 @@ const ConsultantDetails = () => {
     } catch (error) {
       console.error('Error submitting job details:', error);
       console.error('Error response:', error.response?.data);
-      toast.error(error.response?.data?.message || 'Failed to add job details');
+      Toast.error(error.response?.data?.message || 'Failed to add job details');
     }
   };
 
@@ -622,9 +622,9 @@ const ConsultantDetails = () => {
     } catch (error) {
       console.error('Error fetching staff members:', error);
       if (error.response?.status === 400) {
-        toast.error('Invalid role specified. Please check the role name.');
+        Toast.error('Invalid role specified. Please check the role name.');
       } else {
-        toast.error('Failed to load staff members');
+        Toast.error('Failed to load staff members');
       }
       // Ensure state is set to empty arrays on error
       setCoordinators([]);
@@ -645,13 +645,13 @@ const ConsultantDetails = () => {
       const response = await Axios.post(`/consultants/${selectedConsultantForStaff}/assign-staff`, payload);
       
       if (response.data) {
-        toast.success('Staff assigned successfully');
+        Toast.success('Staff assigned successfully');
         setShowStaffModal(false);
         loadConsultants(); // Refresh the consultant list
       }
     } catch (error) {
       console.error('Error assigning staff:', error);
-      toast.error(error.response?.data?.message || 'Failed to assign staff');
+      Toast.error(error.response?.data?.message || 'Failed to assign staff');
     }
   };
 
@@ -682,11 +682,11 @@ const ConsultantDetails = () => {
               : consultant
           )
         );
-        toast.success('Assigned as resume builder successfully');
+        Toast.success('Assigned as resume builder successfully');
       }
     } catch (error) {
       console.error('Error assigning resume builder:', error);
-      toast.error(error.response?.data?.message || 'Failed to assign resume builder');
+      Toast.error(error.response?.data?.message || 'Failed to assign resume builder');
     }
   };
 
@@ -710,11 +710,11 @@ const ConsultantDetails = () => {
               : consultant
           )
         );
-        toast.success('Disassigned as resume builder successfully');
+        Toast.success('Disassigned as resume builder successfully');
       }
     } catch (error) {
       console.error('Error disassigning resume builder:', error);
-      toast.error(error.response?.data?.message || 'Failed to disassign resume builder');
+      Toast.error(error.response?.data?.message || 'Failed to disassign resume builder');
     }
   };
 
@@ -732,7 +732,7 @@ const ConsultantDetails = () => {
 
         // Check if file is PDF
         if (file.type !== 'application/pdf') {
-          toast.error('Please upload a PDF file');
+          Toast.error('Please upload a PDF file');
           return;
         }
 
@@ -748,7 +748,7 @@ const ConsultantDetails = () => {
         });
 
         if (response.data) {
-          toast.success('Resume uploaded successfully');
+          Toast.success('Resume uploaded successfully');
           loadConsultants(); // Refresh the consultant list
         }
       };
@@ -757,14 +757,14 @@ const ConsultantDetails = () => {
       input.click();
     } catch (error) {
       console.error('Error uploading resume:', error);
-      toast.error(error.response?.data?.message || 'Failed to upload resume');
+      Toast.error(error.response?.data?.message || 'Failed to upload resume');
     }
   };
 
   // Add this function to handle placement status update
   const handlePlacementStatusUpdate = async (consultantId, newStatus) => {
     if (!consultantId) {
-      toast.error('Invalid consultant ID');
+      Toast.error('Invalid consultant ID');
       return;
     }
 
@@ -777,11 +777,67 @@ const ConsultantDetails = () => {
         // Update the local state with the response data
         const updatedConsultants = consultants.map(consultant => {
           if (consultant.id === consultantId) {
+            // Reset all status flags first
+            const updatedConsultant = {
+              ...consultant,
+              isPlaced: false,
+              isHold: false,
+              isActive: false,
+              isOfferPending: false
+            };
+
+            // Set the appropriate flag based on the new status
+            switch (newStatus) {
+              case 'placed':
+                updatedConsultant.isPlaced = true;
+                break;
+              case 'hold':
+                updatedConsultant.isHold = true;
+                break;
+              case 'offerPending':
+                updatedConsultant.isOfferPending = true;
+                break;
+              case 'active':
+                updatedConsultant.isActive = true;
+                break;
+              default:
+                break;
+            }
+
+            return updatedConsultant;
+          }
+          return consultant;
+        });
+
+        setConsultants(updatedConsultants);
+        setFilteredConsultants(updatedConsultants);
+        Toast.success(response.data.message || 'Status updated successfully');
+      }
+    } catch (error) {
+      console.error('Error updating placement status:', error);
+      Toast.error(error.response?.data?.message || 'Failed to update placement status');
+    }
+  };
+
+  // Add this function after handlePlacementStatusUpdate
+  const handleOpenForWorkUpdate = async (consultantId, isOpen) => {
+    if (!consultantId) {
+      Toast.error('Invalid consultant ID');
+      return;
+    }
+
+    try {
+      const response = await Axios.patch(`/consultants/${consultantId}/open-for-work`, {
+        openForWork: isOpen === 'true'
+      });
+
+      if (response.data) {
+        // Update the local state with the response data
+        const updatedConsultants = consultants.map(consultant => {
+          if (consultant.id === consultantId) {
             return {
               ...consultant,
-              isPlaced: response.data.jobDetails.consultant.isPlaced,
-              isHold: response.data.jobDetails.consultant.isHold,
-              isActive: response.data.jobDetails.consultant.isActive
+              openForWork: isOpen === 'true'
             };
           }
           return consultant;
@@ -789,11 +845,54 @@ const ConsultantDetails = () => {
 
         setConsultants(updatedConsultants);
         setFilteredConsultants(updatedConsultants);
-        toast.success(response.data.message);
+        Toast.success('Work status updated successfully');
       }
     } catch (error) {
-      console.error('Error updating placement status:', error);
-      toast.error(error.response?.data?.message || 'Failed to update placement status');
+      console.error('Error updating work status:', error);
+      Toast.error(error.response?.data?.message || 'Failed to update work status');
+    }
+  };
+
+  // Update the handler function to use the correct endpoint and check for proper roles
+  const handleBgvVerifiedUpdate = async (consultantId, isVerified) => {
+    if (!consultantId) {
+      Toast.error('Invalid consultant ID');
+      return;
+    }
+
+    if (userRole !== 'superAdmin' && userRole !== 'admin') {
+      Toast.error('You do not have permission to update BGV status');
+      return;
+    }
+
+    try {
+      const response = await Axios.patch(`/consultants/${consultantId}/bgv-status`, {
+        bgvVerified: isVerified === 'true'
+      });
+
+      if (response.data) {
+        // Update the local state with the response data
+        const updatedConsultants = consultants.map(consultant => {
+          if (consultant.id === consultantId) {
+            return {
+              ...consultant,
+              bgvVerified: isVerified === 'true'
+            };
+          }
+          return consultant;
+        });
+
+        setConsultants(updatedConsultants);
+        setFilteredConsultants(updatedConsultants);
+        Toast.success('BGV status updated successfully');
+      }
+    } catch (error) {
+      console.error('Error updating BGV status:', error);
+      if (error.response?.status === 403) {
+        Toast.error('You do not have permission to update BGV status');
+      } else {
+        Toast.error(error.response?.data?.message || 'Failed to update BGV status');
+      }
     }
   };
 
@@ -847,25 +946,25 @@ const ConsultantDetails = () => {
     try {
       // Validate required fields
       if (!interviewFormData.date || !interviewFormData.timeEST || !interviewFormData.interviewSupportName || !interviewFormData.mode) {
-        toast.error('Please fill in all required fields');
+        Toast.error('Please fill in all required fields');
         return;
       }
 
       // Validate duration
       if (!INTERVIEW_DURATIONS.includes(interviewFormData.duration)) {
-        toast.error('Invalid duration selected');
+        Toast.error('Invalid duration selected');
         return;
       }
 
       // Validate round
       if (!INTERVIEW_ROUNDS.includes(interviewFormData.round)) {
-        toast.error('Invalid round selected');
+        Toast.error('Invalid round selected');
         return;
       }
 
       // Validate country
       if (!INTERVIEW_COUNTRIES.includes(interviewFormData.country)) {
-        toast.error('Invalid country selected');
+        Toast.error('Invalid country selected');
         return;
       }
 
@@ -884,7 +983,7 @@ const ConsultantDetails = () => {
       };
 
       await Axios.post(`/consultants/${selectedConsultantForInterview.id}/interviews`, payload);
-      toast.success('Interview scheduled successfully');
+      Toast.success('Interview scheduled successfully');
       setShowInterviewModal(false);
       
       // Reset form
@@ -902,13 +1001,13 @@ const ConsultantDetails = () => {
         otterLink: ''
       });
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Failed to schedule interview');
+      Toast.error(error.response?.data?.message || 'Failed to schedule interview');
     }
   };
 
   return (
     <div className="container">
-      <ToastContainer />
+      <Toast.ToastContainer />
       <div className="consultant-header text-center">
         <h2 className="display-6 fw-bold mb-3">
           Consultant Registration Fee
@@ -1018,7 +1117,11 @@ const ConsultantDetails = () => {
             <tr>
               <th className="header-cell">Actions</th>
               {consultants.some(consultant => consultant.ConsultantJobDetail?.isJob) && (
-                <th className="header-cell">Placement Status</th>
+                <>
+                  <th className="header-cell">Placement Status</th>
+                  <th className="header-cell">Open For Work</th>
+                  <th className="header-cell">BGV Verify</th>
+                </>
               )}
               {consultants[0]?.fields
                 .filter(field => visibleColumns[field.fieldName])
@@ -1114,43 +1217,92 @@ const ConsultantDetails = () => {
                     </div>
                   </td>
                   {consultants.some(consultant => consultant.ConsultantJobDetail?.isJob) && (
-                    <td className="data-cell">
-                      {consultant.ConsultantJobDetail?.isJob ? (
-                        (userRole === 'superAdmin' || userRole === 'teamLead' || userRole === 'coordinator') ? (
-                          <div className="placement-status-dropdown">
+                    <>
+                      <td className="data-cell">
+                        {consultant.ConsultantJobDetail?.isJob ? (
+                          (userRole === 'superAdmin' || userRole === 'teamLead' || userRole === 'coordinator') ? (
+                            <div className="placement-status-dropdown">
+                              <select
+                                className={`form-select form-select-sm ${
+                                  consultant.isPlaced ? 'status-placed' :
+                                  consultant.isHold ? 'status-hold' :
+                                  consultant.isOfferPending ? 'status-pending' :
+                                  'status-active'
+                                }`}
+                                value={
+                                  consultant.isPlaced ? 'placed' :
+                                  consultant.isHold ? 'hold' :
+                                  consultant.isOfferPending ? 'offerPending' :
+                                  'active'
+                                }
+                                onChange={(e) => handlePlacementStatusUpdate(consultant.id, e.target.value)}
+                              >
+                                <option value="placed">Got Offer</option>
+                                <option value="hold">Hold</option>
+                                <option value="offerPending">Offer Pending</option>
+                                <option value="active">Active</option>
+                              </select>
+                            </div>
+                          ) : (
+                            <span className={`badge px-3 py-2 ${
+                              consultant.isPlaced ? 'bg-success' : 
+                              consultant.isHold ? 'bg-warning' : 
+                              consultant.isOfferPending ? 'bg-info' :
+                              'bg-primary'
+                            }`}>
+                              {consultant.isPlaced ? 'Placed' : 
+                               consultant.isHold ? 'Hold' : 
+                               consultant.isOfferPending ? 'Offer Pending' :
+                               'Active'}
+                            </span>
+                          )
+                        ) : (
+                          <span className="text-muted">No Job</span>
+                        )}
+                      </td>
+                      <td className="data-cell">
+                        {(userRole === 'superAdmin' || userRole === 'admin' || userRole === 'coordinator') ? (
+                          <div className="work-status-dropdown">
                             <select
-                              className={`form-select form-select-sm ${
-                                consultant.isPlaced ? 'status-placed' :
-                                consultant.isHold ? 'status-hold' :
-                                'status-active'
-                              }`}
-                              value={
-                                consultant.isPlaced ? 'placed' :
-                                consultant.isHold ? 'hold' :
-                                'active'
-                              }
-                              onChange={(e) => handlePlacementStatusUpdate(consultant.id, e.target.value)}
+                              className={`form-select form-select-sm ${consultant.openForWork ? 'bg-success' : 'bg-warning'}`}
+                              value={consultant.openForWork.toString()}
+                              onChange={(e) => handleOpenForWorkUpdate(consultant.id, e.target.value)}
                             >
-                              <option value="placed">Placed</option>
-                              <option value="hold">Hold</option>
-                              <option value="active">Active</option>
+                              <option value="true">Yes</option>
+                              <option value="false">No</option>
                             </select>
                           </div>
                         ) : (
                           <span className={`badge px-3 py-2 ${
-                            consultant.isPlaced ? 'bg-success' : 
-                            consultant.isHold ? 'bg-warning' : 
-                            'bg-info'
+                            consultant.openForWork ? 'bg-success' : 'bg-warning'
                           }`}>
-                            {consultant.isPlaced ? 'Placed' : 
-                             consultant.isHold ? 'Hold' : 
-                             'Active'}
+                            {consultant.openForWork ? 'Yes' : 'No'}
                           </span>
-                        )
-                      ) : (
-                        <span className="text-muted">No Job</span>
-                      )}
-                    </td>
+                        )}
+                      </td>
+                      <td className="data-cell">
+                        {(userRole === 'superAdmin' || userRole === 'admin') ? (
+                          <div className="work-status-dropdown">
+                            <select
+                              className={`form-select form-select-sm ${
+                                consultant.bgvVerified ? 'bg-success' : 'bg-warning'
+                              }`}
+                              value={consultant.bgvVerified?.toString()}
+                              onChange={(e) => handleBgvVerifiedUpdate(consultant.id, e.target.value)}
+                            >
+                              <option value="true">Yes</option>
+                              <option value="false">No</option>
+                            </select>
+                          </div>
+                        ) : (
+                          <span className={`badge px-3 py-2 ${
+                            consultant.bgvVerified ? 'bg-success' : 'bg-warning'
+                          }`}>
+                            {consultant.bgvVerified ? 'Yes' : 'No'}
+                          </span>
+                        )}
+                      </td>
+                    </>
                   )}
                   {consultant.fields
                     .filter(field => visibleColumns[field.fieldName])
@@ -1183,16 +1335,16 @@ const ConsultantDetails = () => {
                                   const url = window.URL.createObjectURL(new Blob([response.data], { type: 'application/pdf' }));
                                   const newWindow = window.open(url, '_blank');
                                   if (!newWindow) {
-                                    toast.error('Please allow popups to view the resume');
+                                    Toast.error('Please allow popups to view the resume');
                                   }
                                 } catch (error) {
                                   console.error('Error fetching resume:', error);
                                   if (error.response?.status === 403) {
-                                    toast.error('You are not authorized to view this resume');
+                                    Toast.error('You are not authorized to view this resume');
                                   } else if (error.response?.status === 404) {
-                                    toast.error('No resume found for this consultant');
+                                    Toast.error('No resume found for this consultant');
                                   } else {
-                                    toast.error('Failed to fetch resume. Please try again.');
+                                    Toast.error('Failed to fetch resume. Please try again.');
                                   }
                                 }
                               }}
@@ -1221,16 +1373,16 @@ const ConsultantDetails = () => {
                                   const url = window.URL.createObjectURL(new Blob([response.data], { type: 'application/pdf' }));
                                   const newWindow = window.open(url, '_blank');
                                   if (!newWindow) {
-                                    toast.error('Please allow popups to view the document');
+                                    Toast.error('Please allow popups to view the document');
                                   }
                                 } catch (error) {
                                   console.error('Error fetching document:', error);
                                   if (error.response?.status === 403) {
-                                    toast.error('You are not authorized to view this document');
+                                    Toast.error('You are not authorized to view this document');
                                   } else if (error.response?.status === 404) {
-                                    toast.error('Document not found');
+                                    Toast.error('Document not found');
                                   } else {
-                                    toast.error('Failed to fetch document. Please try again.');
+                                    Toast.error('Failed to fetch document. Please try again.');
                                   }
                                 }
                               }}

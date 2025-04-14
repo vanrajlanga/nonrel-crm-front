@@ -14,7 +14,7 @@ import ConsultantJobDetails from '../components/Consultant/ConsultantJobDetails'
 import ConsultantAggrementDetails from '../components/Consultant/ConsultantAgreementDetails';
 import UserProfile from '../components/UserProfile/UserProfile';
 import ConsultantInterviewDetails from '../components/Consultant/ConsultantInterviewDetails';
-// import ConsultantResumeBuilder from '../components/Consultant/ConsultantResumeBuilder';
+import ConsultantFeesDetails from '../components/Consultant/ConsultantFeesDetails';
 import Unauthorized from '../components/Unauthorized';
 import UserManagement from '../components/UserManagement/UserManagement';
 import PrivateRoute from '../components/PrivateRoute'; // Adjust the import path as needed
@@ -133,14 +133,14 @@ const Router = () => {
             </PrivateRoute>
           }
         />    
-        {/* <Route
-        //   path="/consultants/consultantResumeBuilder"
-        //   element={
-        //     <PrivateRoute allowedRoles={['superAdmin', 'team']}>
-        //       <ConsultantResumeBuilder />
-        //     </PrivateRoute>
-        //   }
-        // />  */}
+        <Route
+          path="/consultants/consultantFeesDetails"
+          element={
+            <PrivateRoute allowedRoles={['superAdmin', 'admin']}>
+              <ConsultantFeesDetails />
+            </PrivateRoute>
+         }
+        /> 
         {/* Optionally add routes for login, signup, unauthorized, etc. */}
       </Routes>
     </>

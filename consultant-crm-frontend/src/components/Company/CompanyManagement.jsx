@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import Axios from '../../services/api';
+import Toast from '../common/Toast';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import './CompanyManagement.css';
@@ -94,10 +95,10 @@ const CompanyManagement = () => {
       
       if (isEditing) {
         await Axios.put(`/companies/${selectedCompany.id}`, companyForm, config);
-        toast.success('Company updated successfully');
+        Toast.success('Company updated successfully');
       } else {
         await Axios.post('/companies', companyForm, config);
-        toast.success('Company created successfully');
+        Toast.success('Company created successfully');
       }
       setShowCompanyModal(false);
       resetCompanyForm();
@@ -131,7 +132,7 @@ const CompanyManagement = () => {
       };
 
       await Axios.post(`/companies/${jobForm.companyId}/jobs`, { jobTitle: jobForm.jobTitle }, config);
-      toast.success('Job posting created successfully');
+      Toast.success('Job posting created successfully');
       setShowJobModal(false);
       resetJobForm();
       loadCompanies();
@@ -164,7 +165,7 @@ const CompanyManagement = () => {
         };
 
         await Axios.delete(`/companies/${companyId}`, config);
-        toast.success('Company deleted successfully');
+        Toast.success('Company deleted successfully');
         loadCompanies();
       } catch (error) {
         if (error.response?.status === 403) {
@@ -196,7 +197,7 @@ const CompanyManagement = () => {
         };
 
         await Axios.delete(`/companies/${companyId}/jobs/${jobId}`, config);
-        toast.success('Job posting deleted successfully');
+        Toast.success('Job posting deleted successfully');
         loadCompanies();
       } catch (error) {
         if (error.response?.status === 403) {
@@ -257,7 +258,7 @@ const CompanyManagement = () => {
 
   return (
     <div className="company-management-container">
-      <ToastContainer />
+      <Toast.ToastContainer />
       
       <div className="header-section">
         <h2 className="title">Company Management</h2>

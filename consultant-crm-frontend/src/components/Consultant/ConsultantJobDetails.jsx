@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import Axios from '../../services/api';
-import { toast, ToastContainer } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
+import Toast from '../common/Toast';
 import {  BsChevronLeft, BsChevronRight, BsCurrencyDollar } from 'react-icons/bs';
 import Filter from '../Filter';
 import Modal from 'react-bootstrap/Modal';
@@ -209,7 +208,7 @@ const ConsultantJobDetails = () => {
       console.error('Error fetching job details:', error);
       const errorMessage = error.response?.data?.message || 'Failed to fetch job details';
       setError(errorMessage);
-      toast.error(errorMessage);
+      Toast.error(errorMessage);
       // Ensure we set empty arrays on error
       setJobDetails([]);
       setFilteredJobDetails([]);
@@ -394,12 +393,12 @@ const ConsultantJobDetails = () => {
 
       // Validate inputs
       if (newPayment <= 0 && !isTotalFeesUpdated) {
-        toast.error('New payment amount must be greater than 0');
+        Toast.error('New payment amount must be greater than 0');
         return;
       }
 
       if (previousReceived + newPayment > totalFees) {
-        toast.error('Total received amount cannot exceed total fees');
+        Toast.error('Total received amount cannot exceed total fees');
         return;
       }
 
@@ -437,11 +436,11 @@ const ConsultantJobDetails = () => {
           feesStatus: newStatus
         }));
 
-        toast.success(isTotalFeesUpdated ? 'Total fees updated successfully' : 'Payment recorded successfully');
+        Toast.success(isTotalFeesUpdated ? 'Total fees updated successfully' : 'Payment recorded successfully');
         setShowFeesModal(false);
       }
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Error updating fees');
+      Toast.error(error.response?.data?.message || 'Error updating fees');
     }
   };
 
@@ -501,7 +500,7 @@ const ConsultantJobDetails = () => {
       });
     } catch (error) {
       console.error('Error in handleAgreementModalOpen:', error);
-      toast.error('Error initializing agreement form');
+      Toast.error('Error initializing agreement form');
     }
     setShowAgreementModal(true);
   };
@@ -517,21 +516,21 @@ const ConsultantJobDetails = () => {
 
       // Validate required fields
       if (!agreementData.emiDate || !agreementData.totalSalary) {
-        toast.error('EMI date and Total Salary are required');
+        Toast.error('EMI date and Total Salary are required');
         return;
       }
 
       // Validate EMI date
       const emiDateNum = parseInt(agreementData.emiDate, 10);
       if (isNaN(emiDateNum) || emiDateNum < 1 || emiDateNum > 31) {
-        toast.error('EMI date must be between 1 and 31');
+        Toast.error('EMI date must be between 1 and 31');
         return;
       }
 
       // Validate total salary
       const totalSalary = parseFloat(agreementData.totalSalary);
       if (isNaN(totalSalary) || totalSalary <= 0) {
-        toast.error('Total salary must be greater than 0');
+        Toast.error('Total salary must be greater than 0');
         return;
       }
 
@@ -561,7 +560,7 @@ const ConsultantJobDetails = () => {
 
         setJobDetails(updatedConsultantState);
         setFilteredJobDetails(updatedConsultantState);
-        toast.success('Agreement created successfully');
+        Toast.success('Agreement created successfully');
         setShowAgreementModal(false);
       }
     } catch (error) {
@@ -583,16 +582,16 @@ const ConsultantJobDetails = () => {
 
         setJobDetails(updatedConsultantState);
         setFilteredJobDetails(updatedConsultantState);
-        toast.error(error.response.data.message);
+        Toast.error(error.response.data.message);
       } else {
         const errorMessage = error.response?.data?.message || 'Error creating agreement';
         if (error.response?.data?.errors) {
           const validationErrors = error.response.data.errors
             .map(err => `${err.field}: ${err.message}`)
             .join(', ');
-          toast.error(`Validation error: ${validationErrors}`);
+          Toast.error(`Validation error: ${validationErrors}`);
         } else {
-          toast.error(errorMessage);
+          Toast.error(errorMessage);
         }
       }
     }
@@ -628,17 +627,17 @@ const ConsultantJobDetails = () => {
 
         setJobDetails(updatedConsultantState);
         setFilteredJobDetails(updatedConsultantState);
-        toast.success('Agreement cancelled successfully');
+        Toast.success('Agreement cancelled successfully');
       }
     } catch (error) {
       console.error('Error cancelling agreement:', error);
-      toast.error(error.response?.data?.message || 'Error cancelling agreement');
+      Toast.error(error.response?.data?.message || 'Error cancelling agreement');
     }
   };
 
   return (
     <div className="container">
-      <ToastContainer />
+      <Toast.ToastContainer />
       <div className="consultant-header text-center">
         <h2 className="display-6 fw-bold mb-3">
             Project Onboarding Fee

@@ -12,8 +12,7 @@ import {
 } from "react-icons/bs";
 import { BiUndo } from "react-icons/bi";
 import Axios from "../../services/api";
-import { toast, ToastContainer } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
+import Toast from "../common/Toast";
 import "bootstrap/dist/css/bootstrap.min.css";
 import "./SingleConsultant.css";
 
@@ -122,24 +121,23 @@ const SingleConsultant = () => {
 			await Axios.post(`/consultants/${id}/verify-payment`, {
 				verifybtn: true,
 			});
-			// Refresh consultant data to show updated payment status
 			const response = await Axios.get(`/consultants/${id}`);
 			setConsultant(response.data);
-			toast.success("Payment verified successfully");
+			Toast.success("Payment verified successfully");
 		} catch (err) {
 			console.error("Error verifying payment:", err);
-			toast.error(err.response?.data?.message || "Failed to verify payment");
+			Toast.error(err.response?.data?.message || "Failed to verify payment");
 		}
 	};
 
 	const handleCancelRegistration = async () => {
 		try {
 			await Axios.delete(`/consultants/${id}`);
-			toast.success("Registration cancelled successfully");
+			Toast.success("Registration cancelled successfully");
 			navigate("/consultants/consultantsDetails");
 		} catch (err) {
 			console.error("Error canceling registration:", err);
-			toast.error(
+			Toast.error(
 				err.response?.data?.message || "Failed to cancel registration"
 			);
 		}
@@ -155,10 +153,10 @@ const SingleConsultant = () => {
 			// Refresh consultant data
 			const response = await Axios.get(`/consultants/${id}`);
 			setConsultant(response.data);
-			toast.success("Payment verification undone successfully");
+			Toast.success("Payment verification undone successfully");
 		} catch (err) {
 			console.error("Error undoing payment verification:", err);
-			toast.error(
+			Toast.error(
 				err.response?.data?.message || "Failed to undo payment verification"
 			);
 		}
@@ -172,10 +170,10 @@ const SingleConsultant = () => {
 			// Refresh consultant data
 			const response = await Axios.get(`/consultants/${id}`);
 			setConsultant(response.data);
-			toast.success("Job details removed successfully");
+			Toast.success("Job details removed successfully");
 		} catch (err) {
 			console.error("Error removing job details:", err);
-			toast.error(err.response?.data?.message || "Failed to remove job details");
+			Toast.error(err.response?.data?.message || "Failed to remove job details");
 		}
 	};
 
@@ -188,7 +186,7 @@ const SingleConsultant = () => {
 		e.preventDefault();
 
 		if (!jobFormData.companyName || !jobFormData.jobType || !jobFormData.dateOfOffer) {
-			toast.error("Please fill in all required fields");
+			Toast.error("Please fill in all required fields");
 			return;
 		}
 
@@ -216,10 +214,11 @@ const SingleConsultant = () => {
 				},
 				isPlaced: response.data.jobDetails.consultant.isPlaced,
 				isHold: response.data.jobDetails.consultant.isHold,
-				isActive: response.data.jobDetails.consultant.isActive
+				isActive: response.data.jobDetails.consultant.isActive,
+				isOfferPending: response.data.jobDetails.consultant.isOfferPending
 			}));
 
-			toast.success("Job details added successfully");
+			Toast.success("Job details added successfully");
 			setShowModal(false);
 
 			// Reset form
@@ -236,10 +235,10 @@ const SingleConsultant = () => {
 		} catch (error) {
 			console.error("Error submitting job details:", error.response || error);
 			const errorMessage = error.response?.data?.message || "Failed to add job details";
-			toast.error(errorMessage);
+			Toast.error(errorMessage);
 
 			if (error.response?.data?.missingFields) {
-				toast.error(`Missing fields: ${error.response.data.missingFields.join(", ")}`);
+				Toast.error(`Missing fields: ${error.response.data.missingFields.join(", ")}`);
 			}
 		}
 	};
@@ -250,7 +249,7 @@ const SingleConsultant = () => {
 
 	return (
 		<div className="single-consultant-container">
-			<ToastContainer />
+			<Toast.ToastContainer />
 			<button
 				className="back-button"
 				onClick={() => navigate("/consultants/consultantsDetails")}

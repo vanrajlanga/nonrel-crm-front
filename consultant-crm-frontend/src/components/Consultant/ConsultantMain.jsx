@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import { BsPersonFill, BsBuildingsFill, BsPeopleFill, BsFileEarmarkText, BsPersonLinesFill } from 'react-icons/bs';
-import { MdOutlineDocumentScanner } from "react-icons/md";
+import { MdOutlinePayment } from "react-icons/md";
 
 const ConsultantMain = () => {
   const navigate = useNavigate();
@@ -50,11 +50,11 @@ const ConsultantMain = () => {
       showForRoles: ['superAdmin', 'coordinator', 'teamLead']
     },
     {
-      title: 'Consultants Resume Builder',
-      description: 'Consultants Resume Builder',
-      path: '/consultants/consultantResumeBuilder',
-      icon: <MdOutlineDocumentScanner size={40} className="text-primary" />,
-      showForRoles: ['superAdmin', 'coordinator', 'resumeBuilder']
+      title: 'Consultants Fees Details',
+      description: 'Consultants Fees Details',
+      path: '/consultants/consultantFeesDetails',
+      icon: <MdOutlinePayment size={40} className="text-primary" />,
+      showForRoles: ['superAdmin', 'admin']
     }
   ];
 
