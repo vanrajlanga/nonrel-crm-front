@@ -55,55 +55,45 @@ const ConsultantFeesDetails = () => {
       setLoading(true);
       const response = await Axios.get('/consultants');
       
-      // Check for existing agreements and job details for each consultant
+      // Process all consultants, but only fetch additional details for placed ones
       const consultantsWithDetails = await Promise.all(
         response.data.map(async (consultant) => {
-          try {
-            // Get job details first
-            const jobDetailsResponse = await Axios.get(`/consultants/${consultant.id}/job-details`);
-            const jobDetails = jobDetailsResponse.data;
+          let jobDetails = null;
+          let agreementData = null;
 
-            // Then check for agreement
-            let agreementData = null;
+          // Only fetch job details and agreement if consultant is placed
+          if (consultant.isPlaced) {
             try {
-              const agreementResponse = await Axios.get(`/consultants/${consultant.id}/agreement`);
-              // Extract agreement data from the response structure
-              agreementData = agreementResponse.data.agreement;
-              console.log('Agreement data:', agreementData); // For debugging
-            } catch (agreementError) {
-              // If 404, no agreement exists, which is fine
-              if (agreementError.response?.status !== 404) {
-                console.error('Error fetching agreement:', agreementError);
-              }
-            }
+              const jobDetailsResponse = await Axios.get(`/consultants/${consultant.id}/job-details`);
+              jobDetails = jobDetailsResponse.data;
 
-            return {
-              ...consultant,
-              isAgreement: !!agreementData,
-              agreement: agreementData,
-              feesInfo: jobDetails?.feesInfo || {
-                totalFees: 0,
-                receivedFees: 0,
-                remainingFees: 0
-              },
-              feesStatus: jobDetails?.feesStatus || 'pending',
-              jobDetails: jobDetails
-            };
-          } catch (error) {
-            console.error(`Error fetching details for consultant ${consultant.id}:`, error);
-            return {
-              ...consultant,
-              isAgreement: false,
-              agreement: null,
-              feesInfo: {
-                totalFees: 0,
-                receivedFees: 0,
-                remainingFees: 0
-              },
-              feesStatus: 'pending',
-              jobDetails: null
-            };
+              if (jobDetails.isAgreement) {
+                try {
+                  const agreementResponse = await Axios.get(`/consultants/${consultant.id}/agreement`);
+                  agreementData = agreementResponse.data.agreement;
+                } catch (agreementError) {
+                  if (agreementError.response?.status !== 404) {
+                    console.error('Error fetching agreement:', agreementError);
+                  }
+                }
+              }
+            } catch (error) {
+              console.error(`Error fetching details for consultant ${consultant.id}:`, error);
+            }
           }
+
+          return {
+            ...consultant,
+            isAgreement: !!agreementData,
+            agreement: agreementData,
+            feesInfo: jobDetails?.feesInfo || {
+              totalFees: 0,
+              receivedFees: 0,
+              remainingFees: 0
+            },
+            feesStatus: jobDetails?.feesStatus || 'pending',
+            jobDetails: jobDetails
+          };
         })
       );
 
@@ -510,6 +500,43 @@ const ConsultantFeesDetails = () => {
     });
   };
 
+  const handleResetFees = async () => {
+    try {
+      if (!selectedConsultant) return;
+      
+      const response = await Axios.post(`/consultants/${selectedConsultant.id}/reset-fees`);
+      
+      if (response.data) {
+        const updatedConsultants = consultants.map(consultant => {
+          if (consultant.id === selectedConsultant.id) {
+            return {
+              ...consultant,
+              feesInfo: {
+                totalFees: 0,
+                receivedFees: 0,
+                remainingFees: 0
+              },
+              feesStatus: 'pending'
+            };
+          }
+          return consultant;
+        });
+
+        setConsultants(updatedConsultants);
+        setFeesData({
+          totalFees: '0',
+          receivedFees: '0',
+          remainingFees: '0',
+          feesStatus: 'pending'
+        });
+        Toast.success('Fees reset successfully');
+        setShowFeesModal(false);
+      }
+    } catch (error) {
+      Toast.error(error.response?.data?.message || 'Error resetting fees');
+    }
+  };
+
   if (loading) {
     return (
       <div className="text-center p-5">
@@ -596,181 +623,185 @@ const ConsultantFeesDetails = () => {
                             </span>
                           </div>
                         </div>
-                        <div className="fees-row">
-                          <div className="d-flex justify-content-between align-items-center mb-3">
-                            <h2>Consultant Fees</h2>
-                            {issuperAdmin && (
-                              <div className="d-flex gap-2">
-                                <div className="fees-info">
-                                  <span className="fee-item total-fee">
-                                    ${consultant.feesInfo?.totalFees || '0'}
-                                  </span>
-                                  <span className="fee-item received-fee">
-                                    ${consultant.feesInfo?.receivedFees || '0'}
-                                  </span>
-                                  <span className="fee-item remaining-fee">
-                                    ${consultant.feesInfo?.remainingFees || '0'}
-                                  </span>
+                        {consultant.isPlaced && (
+                          <div className="fees-row">
+                            <div className="d-flex justify-content-between align-items-center mb-3">
+                              <h2>Consultant Fees</h2>
+                              {issuperAdmin && (
+                                <div className="d-flex gap-2">
+                                  <div className="fees-info">
+                                    <span className="fee-item total-fee">
+                                      ${consultant.feesInfo?.totalFees || '0'}
+                                    </span>
+                                    <span className="fee-item received-fee">
+                                      ${consultant.feesInfo?.receivedFees || '0'}
+                                    </span>
+                                    <span className="fee-item remaining-fee">
+                                      ${consultant.feesInfo?.remainingFees || '0'}
+                                    </span>
+                                  </div>
+                                  <Button
+                                    variant="outline-primary"
+                                    size="sm"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleFeesModalOpen(consultant);
+                                    }}
+                                    className="fees-btn"
+                                  >
+                                    <BsCurrencyDollar /> Manage Fees
+                                  </Button>
+                                  {consultant.isAgreement ? (
+                                    <Button
+                                      variant="outline-danger"
+                                      size="sm"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleCancelAgreement(consultant);
+                                      }}
+                                    >
+                                      Cancel Agreement
+                                    </Button>
+                                  ) : (
+                                    <Button
+                                      variant="outline-secondary"
+                                      size="sm"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleAgreementModalOpen(consultant);
+                                      }}
+                                    >
+                                      Agreement
+                                    </Button>
+                                  )}
                                 </div>
-                                <Button
-                                  variant="outline-primary"
-                                  size="sm"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleFeesModalOpen(consultant);
-                                  }}
-                                  className="fees-btn"
-                                >
-                                  <BsCurrencyDollar /> Manage Fees
-                                </Button>
-                                {consultant.isAgreement ? (
-                                  <Button
-                                    variant="outline-danger"
-                                    size="sm"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      handleCancelAgreement(consultant);
-                                    }}
-                                  >
-                                    Cancel Agreement
-                                  </Button>
-                                ) : (
-                                  <Button
-                                    variant="outline-secondary"
-                                    size="sm"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      handleAgreementModalOpen(consultant);
-                                    }}
-                                  >
-                                    Agreement
-                                  </Button>
-                                )}
+                              )}
+                            </div>
+                            {!issuperAdmin && (
+                              <div className="fees-status-badge">
+                                <span className={`status-badge status-${consultant.feesStatus || 'pending'}`}>
+                                  {consultant.feesStatus || 'pending'}
+                                </span>
                               </div>
                             )}
                           </div>
-                          {!issuperAdmin && (
-                            <div className="fees-status-badge">
-                              <span className={`status-badge status-${consultant.feesStatus || 'pending'}`}>
-                                {consultant.feesStatus || 'pending'}
-                              </span>
+                        )}
+                        {consultant.isPlaced && consultant.isAgreement && (
+                          <div className="fees-row">
+                            <div className="d-flex justify-content-between align-items-center mb-3">
+                              <h2>Agreement Fees</h2>
                             </div>
-                          )}
-                        </div>
-                        <div className="fees-row">
-                          <div className="d-flex justify-content-between align-items-center mb-3">
-                            <h2>Agreement Fees</h2>
-                          </div>
-                          {consultant.agreement ? (
-                            <div className="agreement-details">
-                              <div className="row mb-3">
-                                <div className="col-md-4">
-                                  <strong>Total Service Fee (20%):</strong>
-                                  <span className="ms-2">
-                                    ${Number(consultant.agreement.totalServiceFee || 0).toLocaleString()}
-                                  </span>
+                            {consultant.agreement ? (
+                              <div className="agreement-details">
+                                <div className="row mb-3">
+                                  <div className="col-md-4">
+                                    <strong>Total Service Fee (20%):</strong>
+                                    <span className="ms-2">
+                                      ${Number(consultant.agreement.totalServiceFee || 0).toLocaleString()}
+                                    </span>
+                                  </div>
+                                  <div className="col-md-4">
+                                    <strong>Monthly Payment:</strong>
+                                    <span className="ms-2">
+                                      ${Number(consultant.agreement.monthlyPaymentAmount || 0).toLocaleString()}
+                                    </span>
+                                  </div>
+                                  <div className="col-md-4">
+                                    <strong>Status:</strong>
+                                    <span className={`badge ms-2 bg-${getStatusBadgeColor(consultant.agreement.paymentCompletionStatus)}`}>
+                                      {(consultant.agreement.paymentCompletionStatus || 'pending').replace('_', ' ').toUpperCase()}
+                                    </span>
+                                  </div>
                                 </div>
-                                <div className="col-md-4">
-                                  <strong>Monthly Payment:</strong>
-                                  <span className="ms-2">
-                                    ${Number(consultant.agreement.monthlyPaymentAmount || 0).toLocaleString()}
-                                  </span>
-                                </div>
-                                <div className="col-md-4">
-                                  <strong>Status:</strong>
-                                  <span className={`badge ms-2 bg-${getStatusBadgeColor(consultant.agreement.paymentCompletionStatus)}`}>
-                                    {(consultant.agreement.paymentCompletionStatus || 'pending').replace('_', ' ').toUpperCase()}
-                                  </span>
-                                </div>
-                              </div>
-                              <div className="table-responsive">
-                                <table className="table table-bordered">
-                                  <thead>
-                                    <tr>
-                                      <th>Month</th>
-                                      <th>Due Date</th>
-                                      <th>Amount Received</th>
-                                      <th>Received Date</th>
-                                      <th>Status</th>
-                                      <th>Notes</th>
-                                      <th>Action</th>
-                                    </tr>
-                                  </thead>
-                                  <tbody>
-                                    {Array.from({ length: 8 }, (_, i) => i + 1).map(month => (
-                                      <tr key={month}>
-                                        <td>Month {month}</td>
-                                        <td>
-                                          {consultant.agreement[`month${month}DueDate`] 
-                                            ? formatDate(consultant.agreement[`month${month}DueDate`]) 
-                                            : '----'}
-                                        </td>
-                                        <td>
-                                          ${Number(consultant.agreement[`month${month}AmountReceived`] || 0).toLocaleString()}
-                                        </td>
-                                        <td>
-                                          {consultant.agreement[`month${month}ReceivedDate`]
-                                            ? formatDate(consultant.agreement[`month${month}ReceivedDate`])
-                                            : '----'}
-                                        </td>
-                                        <td>
-                                          <span className={`badge bg-${getStatusBadgeColor(consultant.agreement[`month${month}Status`])}`}>
-                                            {(consultant.agreement[`month${month}Status`] || 'pending').toUpperCase()}
-                                          </span>
-                                        </td>
-                                        <td>{consultant.agreement[`month${month}Notes`] || '----'}</td>
-                                        <td>
-                                          <Button
-                                            variant="outline-primary"
-                                            size="sm"
-                                            onClick={(e) => {
-                                              e.stopPropagation();
-                                              setSelectedConsultant(consultant);
-                                              setPaymentData({
-                                                ...paymentData,
-                                                month: month.toString()
-                                              });
-                                              setShowPaymentModal(true);
-                                            }}
-                                            disabled={consultant.agreement[`month${month}Status`] === 'paid'}
-                                          >
-                                            Update Payment
-                                          </Button>
-                                        </td>
+                                <div className="table-responsive">
+                                  <table className="table table-bordered">
+                                    <thead>
+                                      <tr>
+                                        <th>Month</th>
+                                        <th>Due Date</th>
+                                        <th>Amount Received</th>
+                                        <th>Received Date</th>
+                                        <th>Status</th>
+                                        <th>Notes</th>
+                                        <th>Action</th>
                                       </tr>
-                                    ))}
-                                  </tbody>
-                                </table>
+                                    </thead>
+                                    <tbody>
+                                      {Array.from({ length: 8 }, (_, i) => i + 1).map(month => (
+                                        <tr key={month}>
+                                          <td>Month {month}</td>
+                                          <td>
+                                            {consultant.agreement[`month${month}DueDate`] 
+                                              ? formatDate(consultant.agreement[`month${month}DueDate`]) 
+                                              : '----'}
+                                          </td>
+                                          <td>
+                                            ${Number(consultant.agreement[`month${month}AmountReceived`] || 0).toLocaleString()}
+                                          </td>
+                                          <td>
+                                            {consultant.agreement[`month${month}ReceivedDate`]
+                                              ? formatDate(consultant.agreement[`month${month}ReceivedDate`])
+                                              : '----'}
+                                          </td>
+                                          <td>
+                                            <span className={`badge bg-${getStatusBadgeColor(consultant.agreement[`month${month}Status`])}`}>
+                                              {(consultant.agreement[`month${month}Status`] || 'pending').toUpperCase()}
+                                            </span>
+                                          </td>
+                                          <td>{consultant.agreement[`month${month}Notes`] || '----'}</td>
+                                          <td>
+                                            <Button
+                                              variant="outline-primary"
+                                              size="sm"
+                                              onClick={(e) => {
+                                                e.stopPropagation();
+                                                setSelectedConsultant(consultant);
+                                                setPaymentData({
+                                                  ...paymentData,
+                                                  month: month.toString()
+                                                });
+                                                setShowPaymentModal(true);
+                                              }}
+                                              disabled={consultant.agreement[`month${month}Status`] === 'paid'}
+                                            >
+                                              Update Payment
+                                            </Button>
+                                          </td>
+                                        </tr>
+                                      ))}
+                                    </tbody>
+                                  </table>
+                                </div>
+                                <div className="row mt-3">
+                                  <div className="col-md-4">
+                                    <strong>Total Paid So Far:</strong>
+                                    <span className="ms-2">
+                                      ${Number(consultant.agreement.totalPaidSoFar || 0).toLocaleString()}
+                                    </span>
+                                  </div>
+                                  <div className="col-md-4">
+                                    <strong>Remaining Balance:</strong>
+                                    <span className="ms-2">
+                                      ${Number(consultant.agreement.remainingBalance || 0).toLocaleString()}
+                                    </span>
+                                  </div>
+                                  <div className="col-md-4">
+                                    <strong>Next Due Date:</strong>
+                                    <span className="ms-2">
+                                      {consultant.agreement.nextDueDate 
+                                        ? formatDate(consultant.agreement.nextDueDate)
+                                        : '----'}
+                                    </span>
+                                  </div>
+                                </div>
                               </div>
-                              <div className="row mt-3">
-                                <div className="col-md-4">
-                                  <strong>Total Paid So Far:</strong>
-                                  <span className="ms-2">
-                                    ${Number(consultant.agreement.totalPaidSoFar || 0).toLocaleString()}
-                                  </span>
-                                </div>
-                                <div className="col-md-4">
-                                  <strong>Remaining Balance:</strong>
-                                  <span className="ms-2">
-                                    ${Number(consultant.agreement.remainingBalance || 0).toLocaleString()}
-                                  </span>
-                                </div>
-                                <div className="col-md-4">
-                                  <strong>Next Due Date:</strong>
-                                  <span className="ms-2">
-                                    {consultant.agreement.nextDueDate 
-                                      ? formatDate(consultant.agreement.nextDueDate)
-                                      : '----'}
-                                  </span>
-                                </div>
+                            ) : (
+                              <div className="text-center text-muted">
+                                <p>No agreement details available</p>
                               </div>
-                            </div>
-                          ) : (
-                            <div className="text-center text-muted">
-                              <p>No agreement details available</p>
-                            </div>
-                          )}
-                        </div>
+                            )}
+                          </div>
+                        )}
                       </div>
                     </td>
                   </tr>
@@ -852,6 +883,9 @@ const ConsultantFeesDetails = () => {
             </Form.Group>
 
             <div className="d-flex justify-content-end gap-2">
+              <Button variant="danger" onClick={handleResetFees}>
+                Reset Fees
+              </Button>
               <Button variant="secondary" onClick={() => setShowFeesModal(false)}>
                 Cancel
               </Button>

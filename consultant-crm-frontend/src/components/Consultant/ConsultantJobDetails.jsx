@@ -491,18 +491,27 @@ const ConsultantJobDetails = () => {
 
   const handleAgreementModalOpen = async (consultant) => {
     console.log('Opening agreement modal for consultant:', consultant);
-    setSelectedConsultant(consultant);
+    
     try {
-      setAgreementData({
-        emiDate: '',
-        totalSalary: '',
-        remarks: ''
-      });
+      // First check if the consultant has job details and isAgreement is true
+      const jobDetailsResponse = await Axios.get(`/consultants/${consultant.consultantId}/job-details`);
+      const jobDetails = jobDetailsResponse.data;
+
+      if (!jobDetails.isAgreement) {
+        setSelectedConsultant(consultant);
+        setAgreementData({
+          emiDate: '',
+          totalSalary: '',
+          remarks: ''
+        });
+        setShowAgreementModal(true);
+      } else {
+        Toast.error('Agreement already exists for this consultant');
+      }
     } catch (error) {
       console.error('Error in handleAgreementModalOpen:', error);
-      Toast.error('Error initializing agreement form');
+      Toast.error('Error checking agreement status');
     }
-    setShowAgreementModal(true);
   };
 
   const handleAgreementSubmit = async (e) => {
@@ -632,6 +641,44 @@ const ConsultantJobDetails = () => {
     } catch (error) {
       console.error('Error cancelling agreement:', error);
       Toast.error(error.response?.data?.message || 'Error cancelling agreement');
+    }
+  };
+
+  const handleResetFees = async () => {
+    try {
+      if (!selectedConsultant) return;
+      
+      const response = await Axios.post(`/consultants/${selectedConsultant.consultantId}/reset-fees`);
+      
+      if (response.data) {
+        const updatedJobDetails = jobDetails.map(detail => {
+          if (detail.consultantId === selectedConsultant.consultantId) {
+            return {
+              ...detail,
+              feesInfo: {
+                totalFees: 0,
+                receivedFees: 0,
+                remainingFees: 0
+              },
+              feesStatus: 'pending'
+            };
+          }
+          return detail;
+        });
+
+        setJobDetails(updatedJobDetails);
+        setFilteredJobDetails(updatedJobDetails);
+        setFeesData({
+          totalFees: '0',
+          receivedFees: '0',
+          remainingFees: '0',
+          feesStatus: 'pending'
+        });
+        Toast.success('Fees reset successfully');
+        setShowFeesModal(false);
+      }
+    } catch (error) {
+      Toast.error(error.response?.data?.message || 'Error resetting fees');
     }
   };
 
@@ -846,6 +893,9 @@ const ConsultantJobDetails = () => {
             </Form.Group>
 
             <div className="d-flex justify-content-end gap-2">
+              <Button variant="danger" onClick={handleResetFees}>
+                Reset Fees
+              </Button>
               <Button variant="secondary" onClick={() => setShowFeesModal(false)}>
                 Cancel
               </Button>
