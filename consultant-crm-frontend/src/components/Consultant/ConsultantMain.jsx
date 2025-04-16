@@ -55,6 +55,13 @@ const ConsultantMain = () => {
       path: '/consultants/consultantFeesDetails',
       icon: <MdOutlinePayment size={40} className="text-primary" />,
       showForRoles: ['superAdmin', 'admin']
+    },
+    {
+      title: 'Personal Details',
+      description: 'Personal Details',
+      path: '/consultants/personalDetails',
+      icon: <BsPersonFill size={40} className="text-primary" />,
+      showForRoles: ['Candidate']
     }
   ];
 

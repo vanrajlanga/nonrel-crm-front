@@ -97,7 +97,7 @@ const ConsultantDetails = () => {
         setLoading(false);
         return;
       }
-
+      
       // Get all possible field names from the first consultant
       const allFields = res.data.length > 0 
         ? Object.keys(res.data[0])
@@ -580,13 +580,13 @@ const ConsultantDetails = () => {
         setConsultants(updatedConsultants);
         setFilteredConsultants(updatedConsultants);
         Toast.success(response.data.message);
-        setShowJobModal(false);
-        setJobFormData({
-          companyId: '',
-          jobId: '',
+      setShowJobModal(false);
+      setJobFormData({
+        companyId: '',
+        jobId: '',
           dateOfOffer: '',
-          jobType: ''
-        });
+        jobType: ''
+      });
       }
     } catch (error) {
       console.error('Error submitting job details:', error);
@@ -1144,26 +1144,26 @@ const ConsultantDetails = () => {
               });
               
               return (
-                <tr key={consultant.id} className="consultant-row">
-                  <td className="data-cell">
+              <tr key={consultant.id} className="consultant-row">
+                <td className="data-cell">
                     <div className="action-buttons-Details">
                       {userRole === 'superAdmin' && (
-                        <button
-                          className="btn btn-view"
-                          onClick={() => handleConsultantClick(consultant.id)}
-                        >
+                      <button
+                        className="btn btn-view"
+                        onClick={() => handleConsultantClick(consultant.id)}
+                      >
                           <BsEye />
-                        </button>
-                      )}
+                      </button>
+                    )}
                       {(userRole === 'superAdmin' || userRole === 'teamLead' || userRole === 'coordinator') && (
                         <>
-                          <button
-                            className="btn btn-job"
-                            onClick={() => handleJobModalOpen(consultant.id)}
+                        <button
+                          className="btn btn-job"
+                          onClick={() => handleJobModalOpen(consultant.id)}
                             title="Add Job Details"
-                          >
+                        >
                             <BsBriefcase />
-                          </button>
+                        </button>
                           {consultant.ConsultantJobDetail?.isJob && (
                             <button
                               className="btn btn-interview"
@@ -1174,48 +1174,48 @@ const ConsultantDetails = () => {
                             </button>
                           )}
                         </>
-                      )}
-                      {userRole === 'superAdmin' && (
-                        <button
-                          className="btn btn-staff"
-                          onClick={() => handleStaffModalOpen(consultant.id)}
-                          title="Assign Staff"
-                        >
+                    )}
+                    {userRole === 'superAdmin' && (
+                      <button
+                        className="btn btn-staff"
+                        onClick={() => handleStaffModalOpen(consultant.id)}
+                        title="Assign Staff"
+                      >
                           <BsPeople />
-                        </button>
-                      )}
-                      {userRole === 'resumeBuilder' && (
-                        <>
-                          {consultant.assignedResumeBuilder ? (
-                            <button
-                              className="btn btn-disassign-me"
-                              onClick={() => handleDisassignResumeBuilder(consultant.id)}
-                              title="Disassign ME"
-                            >
-                              <BsFileText /> Disassign ME
-                            </button>
-                          ) : (
-                            <button
-                              className="btn btn-assign-me"
-                              onClick={() => handleAssignResumeBuilder(consultant.id)}
-                              title="Assign ME"
-                            >
-                              <BsFileText /> Assign ME
-                            </button>
-                          )}
-                          {consultant.assignedResumeBuilder && (
-                            <button
-                              className="btn btn-upload-resume"
-                              onClick={() => handleUploadResume(consultant.id)}
-                              title="Upload Resume"
-                            >
-                              <BsFileText /> Upload
-                            </button>
-                          )}
-                        </>
-                      )}
-                    </div>
-                  </td>
+                      </button>
+                    )}
+                    {userRole === 'resumeBuilder' && (
+                      <>
+                        {consultant.assignedResumeBuilder ? (
+                          <button
+                            className="btn btn-disassign-me"
+                            onClick={() => handleDisassignResumeBuilder(consultant.id)}
+                            title="Disassign ME"
+                          >
+                            <BsFileText /> Disassign ME
+                          </button>
+                        ) : (
+                          <button
+                            className="btn btn-assign-me"
+                            onClick={() => handleAssignResumeBuilder(consultant.id)}
+                            title="Assign ME"
+                          >
+                            <BsFileText /> Assign ME
+                          </button>
+                        )}
+                        {consultant.assignedResumeBuilder && (
+                          <button
+                            className="btn btn-upload-resume"
+                            onClick={() => handleUploadResume(consultant.id)}
+                            title="Upload Resume"
+                          >
+                            <BsFileText /> Upload
+                          </button>
+                        )}
+                      </>
+                    )}
+                  </div>
+                </td>
                   {consultants.some(consultant => consultant.ConsultantJobDetail?.isJob) && (
                     <>
                       <td className="data-cell">
@@ -1304,56 +1304,56 @@ const ConsultantDetails = () => {
                       </td>
                     </>
                   )}
-                  {consultant.fields
-                    .filter(field => visibleColumns[field.fieldName])
-                    .map((field, index) => (
-                      <td key={index} className="data-cell">
+                {consultant.fields
+                  .filter(field => visibleColumns[field.fieldName])
+                  .map((field, index) => (
+                    <td key={index} className="data-cell">
                         {field.fieldName.toLowerCase() === 'coordinator' ? (
                           <div style={{ whiteSpace: 'pre-line' }}>
                             {field.value || '----'}
                           </div>
                         ) : field.fieldName === 'payment status' ? (
-                          <span className={`badge ${field.value ? 'payment-verified' : 'payment-pending'}`}>
-                            {field.value ? 'Verified' : 'Pending'}
-                          </span>
-                        ) : field.fieldName.toLowerCase() === 'resumestatus' ? (
-                          <span className={`badge ${field.value?.toLowerCase() === 'accepted' ? 'resume-accepted' : 
-                                            field.value?.toLowerCase() === 'rejected' ? 'resume-rejected' : 
-                                            'resume-not-built'}`}>
-                            {field.value?.replace('_', ' ')}
-                          </span>
-                        ) : field.fieldName.toLowerCase() === 'resumefile' ? (
-                          field.value ? (
-                            <button
-                              className="btn btn-view-resume"
-                              onClick={async () => {
-                                try {
-                                  const response = await Axios.get(`/consultants/${consultant.id}/resume`, {
-                                    responseType: 'blob'
-                                  });
-                                  
-                                  const url = window.URL.createObjectURL(new Blob([response.data], { type: 'application/pdf' }));
-                                  const newWindow = window.open(url, '_blank');
-                                  if (!newWindow) {
+                        <span className={`badge ${field.value ? 'payment-verified' : 'payment-pending'}`}>
+                          {field.value ? 'Verified' : 'Pending'}
+                        </span>
+                      ) : field.fieldName.toLowerCase() === 'resumestatus' ? (
+                        <span className={`badge ${field.value?.toLowerCase() === 'accepted' ? 'resume-accepted' : 
+                                          field.value?.toLowerCase() === 'rejected' ? 'resume-rejected' : 
+                                          'resume-not-built'}`}>
+                          {field.value?.replace('_', ' ')}
+                        </span>
+                      ) : field.fieldName.toLowerCase() === 'resumefile' ? (
+                        field.value ? (
+                          <button
+                            className="btn btn-view-resume"
+                            onClick={async () => {
+                              try {
+                                const response = await Axios.get(`/consultants/${consultant.id}/resume`, {
+                                  responseType: 'blob'
+                                });
+                                
+                                const url = window.URL.createObjectURL(new Blob([response.data], { type: 'application/pdf' }));
+                                const newWindow = window.open(url, '_blank');
+                                if (!newWindow) {
                                     Toast.error('Please allow popups to view the resume');
-                                  }
-                                } catch (error) {
-                                  console.error('Error fetching resume:', error);
-                                  if (error.response?.status === 403) {
-                                    Toast.error('You are not authorized to view this resume');
-                                  } else if (error.response?.status === 404) {
-                                    Toast.error('No resume found for this consultant');
-                                  } else {
-                                    Toast.error('Failed to fetch resume. Please try again.');
-                                  }
                                 }
-                              }}
-                            >
-                              <BsEye /> View Resume
-                            </button>
-                          ) : (
-                            <span className="text-muted">No resume uploaded</span>
-                          )
+                              } catch (error) {
+                                console.error('Error fetching resume:', error);
+                                if (error.response?.status === 403) {
+                                    Toast.error('You are not authorized to view this resume');
+                                } else if (error.response?.status === 404) {
+                                    Toast.error('No resume found for this consultant');
+                                } else {
+                                    Toast.error('Failed to fetch resume. Please try again.');
+                                }
+                              }
+                            }}
+                          >
+                            <BsEye /> View Resume
+                          </button>
+                        ) : (
+                          <span className="text-muted">No resume uploaded</span>
+                        )
                         ) : field.fieldName.toLowerCase() === 'documentverificationstatus' ? (
                           <span className={`badge ${field.value?.toLowerCase() === 'verified' ? 'bg-success' : 'bg-warning'}`}>
                             {field.value?.charAt(0).toUpperCase() + field.value?.slice(1).toLowerCase()}
@@ -1392,22 +1392,22 @@ const ConsultantDetails = () => {
                           ) : (
                             <span className="text-muted">Not uploaded</span>
                           )
-                        ) : typeof field.value === 'boolean' ? (
-                          <span className={`badge ${field.value ? 'bg-success' : 'bg-secondary'}`}>
-                            {field.value ? 'Yes' : 'No'}
-                          </span>
-                        ) : !field.value && field.value !== 0 ? (
-                          <span className="text-muted">----</span>
-                        ) : field.fieldName.toLowerCase().includes('date') ? (
-                          formatDate(field.value)
-                        ) : typeof field.value === 'object' && field.value !== null ? (
-                          field.value.username || field.value.name || JSON.stringify(field.value)
-                        ) : (
-                          String(field.value)
-                        )}
-                      </td>
-                  ))}
-                </tr>
+                      ) : typeof field.value === 'boolean' ? (
+                        <span className={`badge ${field.value ? 'bg-success' : 'bg-secondary'}`}>
+                          {field.value ? 'Yes' : 'No'}
+                        </span>
+                      ) : !field.value && field.value !== 0 ? (
+                        <span className="text-muted">----</span>
+                      ) : field.fieldName.toLowerCase().includes('date') ? (
+                        formatDate(field.value)
+                      ) : typeof field.value === 'object' && field.value !== null ? (
+                        field.value.username || field.value.name || JSON.stringify(field.value)
+                      ) : (
+                        String(field.value)
+                      )}
+                    </td>
+                ))}
+              </tr>
               );
             })}
             

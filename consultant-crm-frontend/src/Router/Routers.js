@@ -20,7 +20,7 @@ import UserManagement from '../components/UserManagement/UserManagement';
 import PrivateRoute from '../components/PrivateRoute'; // Adjust the import path as needed
 import AuthRoute from '../components/AuthRoute';
 import ConsultantVerificationView from '../components/ConsultantVerificationView/ConsultantVerificationView';
-
+import PersonalDetails from '../components/Candidate/PersonalDetails';
 const Router = () => {
   return (
     <>
@@ -48,7 +48,7 @@ const Router = () => {
         <Route
           path="/consultants"
           element={
-            <PrivateRoute allowedRoles={['superAdmin', 'coordinator', 'resumeBuilder', 'teamLead']}>
+            <PrivateRoute allowedRoles={['superAdmin', 'coordinator', 'resumeBuilder', 'teamLead', 'Candidate']}>
               <ConsultantMain />
             </PrivateRoute>
           }
@@ -141,6 +141,14 @@ const Router = () => {
             </PrivateRoute>
          }
         /> 
+        <Route
+          path="/consultants/personalDetails"
+          element={
+            <PrivateRoute allowedRoles={['Candidate']}>
+              <PersonalDetails />
+            </PrivateRoute> 
+          }
+        />
         {/* Optionally add routes for login, signup, unauthorized, etc. */}
       </Routes>
     </>

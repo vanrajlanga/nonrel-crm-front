@@ -537,6 +537,22 @@ const ConsultantFeesDetails = () => {
     }
   };
 
+  const handleViewProof = (proofPath) => {
+    if (!proofPath) {
+      Toast.error('No proof file available');
+      return;
+    }
+
+    try {
+      const baseUrl = Axios.defaults.baseURL?.replace("/api", "") || "";
+      const fullImageUrl = `${baseUrl}/uploads/emi-proofs/${proofPath}`;
+      window.open(fullImageUrl, "_blank");
+    } catch (error) {
+      console.error('Error viewing proof:', error);
+      Toast.error('Failed to view proof file');
+    }
+  };
+
   if (loading) {
     return (
       <div className="text-center p-5">
@@ -723,6 +739,7 @@ const ConsultantFeesDetails = () => {
                                         <th>Received Date</th>
                                         <th>Status</th>
                                         <th>Notes</th>
+                                        <th>Proof</th>
                                         <th>Action</th>
                                       </tr>
                                     </thead>
@@ -749,6 +766,22 @@ const ConsultantFeesDetails = () => {
                                             </span>
                                           </td>
                                           <td>{consultant.agreement[`month${month}Notes`] || '----'}</td>
+                                          <td>
+                                            {consultant.agreement[`month${month}Proof`] ? (
+                                              <Button
+                                                variant="outline-info"
+                                                size="sm"
+                                                onClick={(e) => {
+                                                  e.stopPropagation();
+                                                  handleViewProof(consultant.agreement[`month${month}Proof`]);
+                                                }}
+                                              >
+                                                <BsEye /> View Proof
+                                              </Button>
+                                            ) : (
+                                              '----'
+                                            )}
+                                          </td>
                                           <td>
                                             <Button
                                               variant="outline-primary"
