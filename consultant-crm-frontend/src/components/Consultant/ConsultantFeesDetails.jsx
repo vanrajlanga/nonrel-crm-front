@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import 'react-toastify/dist/ReactToastify.css';
 import Axios from '../../services/api';
-import { BsChevronDown, BsChevronUp, BsEye, BsCheck, BsCurrencyDollar } from 'react-icons/bs';
+import { BsChevronDown,BsArrowLeft, BsChevronUp, BsEye, BsCheck, BsCurrencyDollar, BsChevronLeft, BsChevronRight } from 'react-icons/bs';
 import { BiUndo } from 'react-icons/bi';
 import Toast from '../common/Toast';
+import { useNavigate } from 'react-router-dom';
 import Modal from 'react-bootstrap/Modal';
 import Form from 'react-bootstrap/Form';
 import Button from 'react-bootstrap/Button';
@@ -12,19 +13,10 @@ import './ConsultantFeesDetails.css';
 const ConsultantFeesDetails = () => {
   const [consultants, setConsultants] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [showEditModal, setShowEditModal] = useState(false);
   const [showFeesModal, setShowFeesModal] = useState(false);
   const [showAgreementModal, setShowAgreementModal] = useState(false);
   const [selectedConsultant, setSelectedConsultant] = useState(null);
-  const [feesFormData, setFeesFormData] = useState({
-    totalFees: '',
-    receivedFees: '',
-    feesStatus: 'pending',
-    isAgreement: false,
-    paymentDate: '',
-    paymentMode: '',
-    remarks: ''
-  });
+  const navigate = useNavigate();
   const [feesData, setFeesData] = useState({
     totalFees: '',
     receivedFees: '0',
@@ -46,22 +38,39 @@ const ConsultantFeesDetails = () => {
     notes: ''
   });
 
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
+  const [totalItems, setTotalItems] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
+  const [pageSizeOptions] = useState([5, 10, 20, 50]);
+
   useEffect(() => {
     loadConsultants();
-  }, []);
+  }, [currentPage, itemsPerPage]);
 
   const loadConsultants = async () => {
     try {
       setLoading(true);
-      const response = await Axios.get('/consultants');
+      const response = await Axios.get('/consultants', {
+        params: {
+          page: currentPage,
+          limit: itemsPerPage
+        }
+      });
+      
+      if (!response.data) {
+        throw new Error('No data received from server');
+      }
+
+      const consultantsData = Array.isArray(response.data) ? response.data : response.data.consultants || [];
       
       // Process all consultants, but only fetch additional details for placed ones
       const consultantsWithDetails = await Promise.all(
-        response.data.map(async (consultant) => {
+        consultantsData.map(async (consultant) => {
           let jobDetails = null;
           let agreementData = null;
 
-          // Only fetch job details and agreement if consultant is placed
           if (consultant.isPlaced) {
             try {
               const jobDetailsResponse = await Axios.get(`/consultants/${consultant.id}/job-details`);
@@ -98,9 +107,18 @@ const ConsultantFeesDetails = () => {
       );
 
       setConsultants(consultantsWithDetails);
+      
+      // Set pagination data
+      if (response.data.totalItems) {
+        setTotalItems(response.data.totalItems);
+        setTotalPages(response.data.totalPages || Math.ceil(response.data.totalItems / itemsPerPage));
+      } else {
+        setTotalItems(consultantsWithDetails.length);
+        setTotalPages(Math.ceil(consultantsWithDetails.length / itemsPerPage));
+      }
     } catch (error) {
       console.error('Error loading consultants:', error);
-      Toast.error('Failed to load consultants');
+      Toast.error(error.response?.data?.message || 'Failed to load consultants');
     } finally {
       setLoading(false);
     }
@@ -553,6 +571,40 @@ const ConsultantFeesDetails = () => {
     }
   };
 
+  // Pagination handlers
+  const handlePageChange = (newPage) => {
+    setCurrentPage(newPage);
+  };
+
+  const handleItemsPerPageChange = (e) => {
+    const newLimit = parseInt(e.target.value);
+    setItemsPerPage(newLimit);
+    setCurrentPage(1); // Reset to first page when changing items per page
+  };
+
+  // Get current page's consultants
+  const indexOfLastConsultant = currentPage * itemsPerPage;
+  const indexOfFirstConsultant = indexOfLastConsultant - itemsPerPage;
+  const currentConsultants = consultants.slice(indexOfFirstConsultant, indexOfLastConsultant);
+
+  // Generate page numbers array for pagination
+  const getPageNumbers = () => {
+    const pageNumbers = [];
+    const maxVisiblePages = 5;
+    let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
+    let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+
+    if (endPage - startPage + 1 < maxVisiblePages) {
+      startPage = Math.max(1, endPage - maxVisiblePages + 1);
+    }
+
+    for (let i = startPage; i <= endPage; i++) {
+      pageNumbers.push(i);
+    }
+
+    return pageNumbers;
+  };
+
   if (loading) {
     return (
       <div className="text-center p-5">
@@ -566,7 +618,35 @@ const ConsultantFeesDetails = () => {
   return (
     <div className="container mt-4">
       <Toast.ToastContainer />
-      <h2 className="mb-4">Consultant Fees Management</h2>
+      <button 
+        className="user-mgmt-back-btn"
+        onClick={() => navigate('/consultants')}
+      >
+        <BsArrowLeft /> Back to Consultants
+      </button>
+      
+      <div className="user-mgmt-header" style={{ textAlign: 'center', marginBottom: '2rem' }}>
+        <div className="user-mgmt-header-actions" style={{ justifyContent: 'center' }}>
+          <h2 className="user-mgmt-title">Consultant Fees Management</h2>
+        </div>
+      </div>
+
+      <div className="d-flex justify-content-between align-items-center mb-3">
+        <div className="items-per-page-selector">
+          <label>Show:</label>
+          <select 
+            className="form-select form-select-sm"
+            value={itemsPerPage}
+            onChange={handleItemsPerPageChange}
+          >
+            {pageSizeOptions.map(option => (
+              <option key={option} value={option}>{option}</option>
+            ))}
+          </select>
+          <span>entries</span>
+        </div>
+        <span className="text-muted">Total: {totalItems} consultants</span>
+      </div>
 
       <div className="table-responsive">
         <table className="table">
@@ -578,7 +658,7 @@ const ConsultantFeesDetails = () => {
             </tr>
           </thead>
           <tbody>
-            {consultants.map(consultant => (
+            {currentConsultants.map(consultant => (
               <React.Fragment key={consultant.id}>
                 <tr 
                   className={`consultant-row ${expandedRow === consultant.id ? 'expanded' : ''}`}
@@ -844,6 +924,55 @@ const ConsultantFeesDetails = () => {
           </tbody>
         </table>
       </div>
+
+      {/* Pagination */}
+      {consultants.length > 0 && (
+        <div className="pagination-container">
+          <div className="d-flex justify-content-between align-items-center">
+            <div className="pagination-info">
+              Showing {indexOfFirstConsultant + 1} to {Math.min(indexOfLastConsultant, totalItems)} of {totalItems} entries
+            </div>
+            
+            <nav aria-label="Consultant fees table navigation">
+              <ul className="pagination">
+                <li className={`page-item ${currentPage === 1 ? 'disabled' : ''}`}>
+                  <button 
+                    className="page-link" 
+                    onClick={() => handlePageChange(currentPage - 1)}
+                    disabled={currentPage === 1}
+                  >
+                    <BsChevronLeft />
+                  </button>
+                </li>
+                
+                {getPageNumbers().map((pageNumber) => (
+                  <li 
+                    key={pageNumber}
+                    className={`page-item ${pageNumber === currentPage ? 'active' : ''}`}
+                  >
+                    <button 
+                      className="page-link"
+                      onClick={() => handlePageChange(pageNumber)}
+                    >
+                      {pageNumber}
+                    </button>
+                  </li>
+                ))}
+                
+                <li className={`page-item ${currentPage === totalPages ? 'disabled' : ''}`}>
+                  <button 
+                    className="page-link" 
+                    onClick={() => handlePageChange(currentPage + 1)}
+                    disabled={currentPage === totalPages}
+                  >
+                    <BsChevronRight />
+                  </button>
+                </li>
+              </ul>
+            </nav>
+          </div>
+        </div>
+      )}
 
       {/* Fees Management Modal */}
       <Modal show={showFeesModal} onHide={() => setShowFeesModal(false)} centered>

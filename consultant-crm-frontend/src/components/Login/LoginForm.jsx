@@ -1,51 +1,87 @@
-import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
+import { FiMail, FiLock, FiArrowRight, FiAlertCircle, FiUser } from 'react-icons/fi';
 import Axios from '../../services/api';
 import './loginForm.css';
 
-const LoginForm = () => {
-  const navigate = useNavigate();
-  const [credentials, setCredentials] = useState({ email: '', password: '' });
+const LoginForm = ({ onAuthSuccess }) => {
+  const [formData, setFormData] = useState({
+    email: '',
+    password: ''
+  });
   const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [isSubmitted, setIsSubmitted] = useState(false);
+
+  useEffect(() => {
+    if (error) {
+      const timer = setTimeout(() => {
+        setError('');
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [error]);
 
   const handleChange = (e) => {
-    setCredentials({ ...credentials, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    setFormData(prevState => ({
+      ...prevState,
+      [name]: value
+    }));
+    if (error) setError('');
+  };
+
+  const validateForm = () => {
+    if (!formData.email) {
+      setError('Please enter your email address');
+      return false;
+    }
+    if (!formData.email.includes('@')) {
+      setError('Please enter a valid email address');
+      return false;
+    }
+    if (!formData.password) {
+      setError('Please enter your password');
+      return false;
+    }
+    return true;
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError(''); // Clear any previous errors
-    
+    if (!validateForm()) return;
+
+    setIsLoading(true);
+    setError('');
+    setIsSubmitted(true);
+
     try {
-      console.log('Attempting login with:', { email: credentials.email });
-      const res = await Axios.post('/auth/login', credentials);
+      const response = await Axios.post('/auth/login', formData);
       
-      console.log('Login response:', res.data); // Log the response for debugging
-      
-      // Check if we have a response and data
-      if (!res.data) {
+      if (!response.data) {
         throw new Error('No data received from server');
       }
 
-      // Extract user data from response
-      const { token, role } = res.data;
-      const user = res.data.user || res.data; // Try both locations for user data
+      const { token, role } = response.data;
+      const user = response.data.user || response.data;
 
       if (!token || !role) {
         throw new Error('Missing required authentication data');
       }
 
-      // Get username with fallbacks
-      const username = user.username || user.name || user.email?.split('@')[0] || 'User';
-      const email = user.email || credentials.email;
+      const username = user.username || '';
+      const email = user.email || formData.email;
+
+      // Add a small delay for the success animation
+      await new Promise(resolve => setTimeout(resolve, 500));
 
       // Store user info in localStorage
       localStorage.setItem('token', token);
       localStorage.setItem('role', role);
       localStorage.setItem('username', username);
       localStorage.setItem('email', email);
-      
-      // Dispatch auth state change event with username
+
+      // Dispatch auth state change event
       const authEvent = new CustomEvent('authStateChange', {
         detail: { 
           isLoggedIn: true,
@@ -55,63 +91,104 @@ const LoginForm = () => {
         }
       });
       window.dispatchEvent(authEvent);
-      
-      // Navigate to home
-      navigate('/');
-      
+
+      if (onAuthSuccess) {
+        onAuthSuccess();
+      } else {
+        window.location.href = '/consultants';
+      }
     } catch (err) {
       console.error('Login error:', err);
-      console.error('Error response:', err.response?.data);
-      
-      // Set error message from server response
-      if (err.response?.data?.message) {
-        setError(err.response.data.message);
-      } else if (err.message) {
-        setError(err.message);
-      } else {
-        setError('Login failed. Please try again.');
-      }
+      setError(err.response?.data?.message || err.message || 'An error occurred during login');
+      setIsSubmitted(false);
+    } finally {
+      setIsLoading(false);
     }
   };
 
   return (
     <div className="login-container">
-      <div className="login-form">
-        <h2 className="login-title">Welcome Back</h2>
+      <div className="login-card">
+        <div className="login-header">
+          <FiUser className="header-icon" />
+          <h1>Welcome Back</h1>
+          <p>Sign in to your account to continue</p>
+        </div>
+
         {error && (
-          <p className="error-message">
-            {error}
-          </p>
+          <div className="error-message" role="alert">
+            <FiAlertCircle />
+            <span>{error}</span>
+          </div>
         )}
-        <form onSubmit={handleSubmit}>
+
+        <form onSubmit={handleSubmit} className="login-form">
           <div className="form-group">
-            <label>Email:</label>
-            <input
-              name="email"
-              type="email"
-              value={credentials.email}
-              onChange={handleChange}
-              required
-              placeholder="Enter your email"
-            />
+            <label htmlFor="email" className="form-label">Email</label>
+            <div className="input-group">
+              <FiMail className="input-icon" />
+              <input
+                id="email"
+                type="email"
+                name="email"
+                className="form-input"
+                placeholder="Enter your email"
+                value={formData.email}
+                onChange={handleChange}
+                required
+                autoComplete="email"
+                disabled={isLoading}
+              />
+            </div>
           </div>
+
           <div className="form-group">
-            <label>Password:</label>
-            <input
-              name="password"
-              type="password"
-              value={credentials.password}
-              onChange={handleChange}
-              required
-              placeholder="Enter your password"
-            />
+            <label htmlFor="password" className="form-label">Password</label>
+            <div className="input-group">
+              <FiLock className="input-icon" />
+              <input
+                id="password"
+                type="password"
+                name="password"
+                className="form-input"
+                placeholder="Enter your password"
+                value={formData.password}
+                onChange={handleChange}
+                required
+                autoComplete="current-password"
+                disabled={isLoading}
+              />
+            </div>
           </div>
-          <button className="login-button" type="submit">
-            Login
+
+          <button 
+            type="submit" 
+            className={`login-button ${isLoading ? 'loading' : ''}`}
+            disabled={isLoading}
+          >
+            <span className="button-content">
+              {isLoading ? (
+                <>
+                  <div className="spinner" />
+                  <span>Signing in...</span>
+                </>
+              ) : (
+                <>
+                  <span>{isSubmitted ? 'Signing in...' : 'Sign In'}</span>
+                  <FiArrowRight className="button-icon" />
+                </>
+              )}
+            </span>
           </button>
         </form>
-        <div className="signup-link">
-          Don't have an account? <Link to="/signup">Sign up</Link>
+
+        <div className="login-footer">
+          <p>
+            Don't have an account?
+            <Link to="/signup" className="signup-link">
+              Create Account
+            </Link>
+          </p>
         </div>
       </div>
     </div>

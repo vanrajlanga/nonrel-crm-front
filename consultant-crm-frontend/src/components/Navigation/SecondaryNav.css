@@ -1,9 +1,13 @@
 .secondary-nav {
-    background: var(--light-primary);
-    padding: .75rem 2rem;
-    border-bottom: 1px solid var(--light-border);
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid rgba(229, 231, 235, 0.5);
+    padding: 0.4rem 0;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
     width: 100%;
-    position: relative;
     display: flex;
     align-items: center;
     justify-content: center
@@ -20,6 +24,9 @@
 }
 
 .secondary-nav-list-wrapper {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 1rem;
     flex: 1;
     display: flex;
     justify-content: center;
@@ -33,68 +40,80 @@
 }
 
 .secondary-nav-list {
-    display: inline-flex;
-    align-items: center;
-    gap: .25rem;
     list-style: none;
     margin: 0;
-    padding: .5rem;
-    background: var(--light-hover);
-    border-radius: var(--border-radius-lg);
-    width: auto;
-    min-width: 600px;
-    justify-content: center
+    padding: 0;
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+    justify-content: flex-start;
 }
 
-.secondary-nav-link {
+.secondary-nav-link,
+.active-nav-button {
     text-decoration: none;
-    color: var(--light-text-secondary);
-    font-size: .875rem;
+    padding: 0.75rem 1.25rem;
+    border-radius: 12px;
+    color: #4b5563;
     font-weight: 500;
-    padding: .5rem 1rem;
-    border-radius: var(--border-radius-md);
-    transition: all .2s cubic-bezier(.4,0,.2,1);
-    position: relative;
+    transition: all 0.3s ease;
+    display: block;
+}
+
+.nav-icon-wrapper {
     display: flex;
     align-items: center;
-    white-space: nowrap;
-    gap: 0.5rem;
+    gap: 0.75rem;
 }
 
 .secondary-nav-link:hover {
-    color: var(--light-text);
-    background: var(--light-primary);
-    transform: translateY(-1px);
-    box-shadow: var(--shadow-sm)
+    background: rgba(99, 102, 241, 0.1);
+    color: #6366f1;
 }
 
 .active-nav-button {
-    text-decoration: none;
-    background: var(--light-primary);
-    color: var(--light-accent);
-    font-size: .875rem;
-    font-weight: 600;
-    padding: .5rem 1rem;
-    border-radius: var(--border-radius-md);
-    transition: all .2s cubic-bezier(.4,0,.2,1);
-    border: none;
-    cursor: pointer;
-    position: relative;
-    display: flex;
-    align-items: center;
-    white-space: nowrap;
-    box-shadow: var(--shadow-sm);
-    gap: 0.5rem;
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    color: white;
+    box-shadow: 0 4px 6px -1px rgba(99, 102, 241, 0.2);
 }
 
-.active-nav-button:after {
-    content: "";
-    position: absolute;
-    bottom: 0;
-    left: 50%;
-    transform: translate(-50%);
-    width: 4px;
-    height: 4px;
-    border-radius: 50%;
-    background: var(--light-accent)
+.active-nav-button:hover {
+    background: linear-gradient(135deg, #4f46e5, #7c3aed);
+    transform: translateY(-1px);
+    color: white;
+}
+
+.secondary-nav-link svg,
+.active-nav-button svg {
+    font-size: 1.2rem;
+    transition: transform 0.3s ease;
+}
+
+.secondary-nav-link span,
+.active-nav-button span {
+    font-size: 0.95rem;
+}
+
+@media (max-width: 768px) {
+    .secondary-nav-list {
+        justify-content: space-around;
+        gap: 0.5rem;
+    }
+
+    .secondary-nav-link,
+    .active-nav-button {
+        padding: 0.5rem 0.75rem;
+    }
+
+    .nav-icon-wrapper {
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        gap: 0.25rem;
+    }
+
+    .secondary-nav-link span,
+    .active-nav-button span {
+        font-size: 0.8rem;
+    }
 }

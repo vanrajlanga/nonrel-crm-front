@@ -1,14 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
 import SecondaryNav from '../Navigation/SecondaryNav';
-import { BsBell } from 'react-icons/bs';
+import { BsBell, BsPersonCircle } from 'react-icons/bs';
 import Axios from '../../services/api';
 import './header.css';
 
 const Header = () => {
   const navigate = useNavigate();
   const [isLoggedIn, setIsLoggedIn] = useState(!!localStorage.getItem('token'));
-  const [searchQuery, setSearchQuery] = useState('');
   const [username, setUsername] = useState(localStorage.getItem('username') || '');
   const [userRole, setUserRole] = useState(localStorage.getItem('role') || '');
   const [pendingCount, setPendingCount] = useState(0);
@@ -147,74 +147,110 @@ const Header = () => {
     navigate('/');
   };
 
-  const handleSearch = (e) => {
-    setSearchQuery(e.target.value);
-  };
-
   const handleBellClick = () => {
     navigate('/consultant-verification');
   };
 
   return (
     <>
-      <header className="header">
-        <div className="header__brand" onClick={() => navigate('/')}>
-          <h1 className="brand-title">CRM System</h1>
-        </div>
+      <motion.header 
+        className="header"
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+      >
+        <motion.div 
+          className="header__brand" 
+          onClick={() => navigate('/')}
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+        >
+          <motion.h1 
+            className="brand-title"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.2 }}
+          >
+            CRM System
+          </motion.h1>
+        </motion.div>
 
-        <div className="header__search">
-          <svg stroke="currentColor" fill="currentColor" strokeWidth="0" version="1.1" id="search" x="0px" y="0px" viewBox="0 0 24 24" className="search-icon" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg"><g><path d="M20.031,20.79c0.46,0.46,1.17-0.25,0.71-0.7l-3.75-3.76c1.27-1.41,2.04-3.27,2.04-5.31
-          c0-4.39-3.57-7.96-7.96-7.96s-7.96,3.57-7.96,7.96c0,4.39,3.57,7.96,7.96,7.96c1.98,0,3.81-0.73,5.21-1.94L20.031,20.79z
-          M4.11,11.02c0-3.84,3.13-6.96,6.96-6.96c3.84,0,6.96,3.12,6.96,6.96c0,3.84-3.12,6.96-6.96,6.96C7.24,17.98,4.11,14.86,4.11,11.02
-          z"></path></g></svg>
-          <input
-            type="text"
-            className="search-input"
-            placeholder="Search..."
-            value={searchQuery}
-            onChange={handleSearch}
-          />
-        </div>
-
-        <div className="header__cta">
-          {isLoggedIn ? (
-            <div className="user-section">
-              {['teamLead', 'coordinator'].includes(userRole) && (
-                <div className="notification-container">
-                  <button 
-                    className="notification-btn"
-                    onClick={handleBellClick}
-                  >
-                    <BsBell />
-                    {pendingCount > 0 && (
-                      <span className="notification-badge">{pendingCount}</span>
-                    )}
-                  </button>
-                </div>
-              )}
-              {username && (
-                <span 
-                  className="username" 
-                  onClick={() => userRole === 'Candidate' && navigate('/my-profile')}
-                  style={{ cursor: userRole === 'Candidate' ? 'pointer' : 'default' }}
-                >
-                  {username}
-                </span>
-              )}
-              <button 
-                className="cta-button"
-                onClick={handleLogout}
+        <motion.div 
+          className="header__cta"
+          initial={{ opacity: 0, x: 20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ delay: 0.4 }}
+        >
+          <AnimatePresence mode="wait">
+            {isLoggedIn ? (
+              <motion.div 
+                className="user-section"
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.9 }}
+                transition={{ duration: 0.2 }}
               >
-                Logout
-              </button>
-            </div>
-          ) : (
-            <button className="cta-button" onClick={handleGetStarted}>
-              Login / Signup
-            </button>
-          )}
-        </div>
-      </header>
+                {['teamLead', 'coordinator'].includes(userRole) && (
+                  <motion.div 
+                    className="notification-container"
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.9 }}
+                  >
+                    <button 
+                      className="notification-btn"
+                      onClick={handleBellClick}
+                    >
+                      <BsBell />
+                      {pendingCount > 0 && (
+                        <motion.span 
+                          className="notification-badge"
+                          initial={{ scale: 0 }}
+                          animate={{ scale: 1 }}
+                          transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                        >
+                          {pendingCount}
+                        </motion.span>
+                      )}
+                    </button>
+                  </motion.div>
+                )}
+                {username && (
+                  <motion.div 
+                    className="username-wrapper"
+                    whileHover={{ scale: 1.05 }}
+                  >
+                    <BsPersonCircle className="user-icon" />
+                    <span 
+                      className="username" 
+                      onClick={() => userRole === 'Candidate' && navigate('/my-profile')}
+                      style={{ cursor: userRole === 'Candidate' ? 'pointer' : 'default' }}
+                    >
+                      {username}
+                    </span>
+                  </motion.div>
+                )}
+                <motion.button 
+                  className="cta-button"
+                  onClick={handleLogout}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  Logout
+                </motion.button>
+              </motion.div>
+            ) : (
+              <motion.button 
+                className="cta-button"
+                onClick={handleGetStarted}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                Login / Signup
+              </motion.button>
+            )}
+          </AnimatePresence>
+        </motion.div>
+      </motion.header>
       <SecondaryNav />
     </>
   );

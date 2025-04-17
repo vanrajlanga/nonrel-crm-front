@@ -7,8 +7,8 @@ import Home from '../pages/Home';
 import SingleConsultatnt from '../components/Consultant/SingleConsultant';
 import ConsultantMain from '../components/Consultant/ConsultantMain';
 import ConsultantDetails from '../components/Consultant/ConsultantDetails';
-import LoginForm from '../components/Login/LoginForm';
-import SignupForm from '../components/Signup/SignupForm';
+// import LoginForm from '../components/Login/LoginForm';
+// import SignupForm from '../components/Signup/SignupForm';
 import CompanyManagement from '../components/Company/CompanyManagement';
 import ConsultantJobDetails from '../components/Consultant/ConsultantJobDetails';
 import ConsultantAggrementDetails from '../components/Consultant/ConsultantAgreementDetails';
@@ -18,7 +18,7 @@ import ConsultantFeesDetails from '../components/Consultant/ConsultantFeesDetail
 import Unauthorized from '../components/Unauthorized';
 import UserManagement from '../components/UserManagement/UserManagement';
 import PrivateRoute from '../components/PrivateRoute'; // Adjust the import path as needed
-import AuthRoute from '../components/AuthRoute';
+// import AuthRoute from '../components/AuthRoute';
 import ConsultantVerificationView from '../components/ConsultantVerificationView/ConsultantVerificationView';
 import PersonalDetails from '../components/Candidate/PersonalDetails';
 const Router = () => {
@@ -28,7 +28,7 @@ const Router = () => {
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/home" element={<Home />} />
-        <Route 
+        {/* <Route 
           path="/login" 
           element={
             <AuthRoute>
@@ -43,7 +43,7 @@ const Router = () => {
               <SignupForm />
             </AuthRoute>
           }
-        />
+        /> */}
         <Route path="/unauthorized" element={<Unauthorized />} />
         <Route
           path="/consultants"

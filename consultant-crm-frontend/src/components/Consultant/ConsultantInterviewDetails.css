@@ -88,13 +88,6 @@
   color: #2c3e50;
 }
 
-.filter-section {
-  margin-bottom: 20px;
-  background: #ffffff;
-  padding: 1.5rem;
-  border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-}
 
 .interview-table {
   width: 100%;
@@ -109,7 +102,7 @@
 }
 
 .interview-table thead {
-  background: linear-gradient(45deg, #2c3e50, #3498db);
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
 }
 
 .interview-table th {

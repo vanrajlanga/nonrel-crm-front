@@ -1,7 +1,7 @@
 /* Add these CSS variables at the top */
 :root {
   --color-background: #ffffff;
-  --color-accent: #4299e1;
+  --color-accent: #6366f1;
   --size-bezel: 0.5rem;
   --size-radius: 10px;
   --color-text: #2d3748;
@@ -19,7 +19,7 @@
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
 }
 
-.consultant-form-container h2 {
+/* .consultant-form-container h2 {
   color: #1a202c;
   font-size: 2.5rem;
   text-align: center;
@@ -28,7 +28,7 @@
   background: linear-gradient(45deg, #4299e1, #667eea);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
-}
+} */
 
 .consultant-form {
   display: flex;
@@ -53,7 +53,7 @@
   left: 0;
   width: 4px;
   height: 100%;
-  background: linear-gradient(180deg, #4299e1, #667eea);
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
 }
 
 .form-section legend {
@@ -279,7 +279,7 @@ select.form-input {
   transition: all 0.3s ease;
   font-size: 1.1rem;
   letter-spacing: 0.5px;
-  background: linear-gradient(45deg, #4299e1, #667eea);
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
   color: white;
   text-align: center;
 }
@@ -319,12 +319,12 @@ select.form-input {
 }
 
 .notification.success {
-  background: linear-gradient(45deg, #9ae6b4, #68d391);
+  background: linear-gradient(135deg, #9ae6b4, #68d391);
   color: #1a4731;
 }
 
 .notification.error {
-  background: linear-gradient(45deg, #feb2b2, #fc8181);
+  background: linear-gradient(135deg, #feb2b2, #fc8181);
   color: #742a2a;
 }
 
@@ -357,9 +357,9 @@ select.form-input {
     grid-template-columns: 1fr;
   }
   
-  .consultant-form-container h2 {
+  /* .consultant-form-container h2 {
     font-size: 2rem;
-  }
+  } */
   
   .form-section legend {
     font-size: 1.25rem;
@@ -438,7 +438,7 @@ select.form-input {
 .icon {
   width: 20px;
   height: 20px;
-  color: #4299e1;
+  color: #6366f1 !important;
 }
 
 .success-icon {
@@ -622,7 +622,7 @@ select.form-input {
   transition: all 0.3s ease;
   font-size: 1.1rem;
   letter-spacing: 0.5px;
-  background: linear-gradient(45deg, #4299e1, #667eea);
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
   color: white;
   position: relative;
   overflow: hidden;
@@ -823,12 +823,12 @@ select.form-input {
 }
 
 .Toastify__toast--success {
-  background: linear-gradient(45deg, #10b981, #059669);
+  background: linear-gradient(135deg, #10b981, #059669);
   color: white;
 }
 
 .Toastify__toast--error {
-  background: linear-gradient(45deg, #ef4444, #dc2626);
+  background: linear-gradient(135deg, #ef4444, #dc2626);
   color: white;
 }
 

@@ -1,0 +1,212 @@
+.consultant-main-container {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #f6f9fc 0%, #edf2f7 100%);
+}
+
+.consultant-main-header {
+  text-align: center;
+  margin-bottom: 3rem;
+  padding: 2rem;
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 16px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+}
+
+.consultant-main-title {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: #2d3748;
+  margin-bottom: 1rem;
+  background: linear-gradient(135deg, #2d3748 0%, #4a5568 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.consultant-main-subtitle {
+  font-size: 1.1rem;
+  color: #718096;
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.consultant-main-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 2rem;
+  padding: 0 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.consultant-main-card {
+  background: white;
+  border-radius: 16px;
+  padding: 2rem;
+  transition: all 0.3s ease;
+  cursor: pointer;
+  border: 1px solid rgba(226, 232, 240, 0.8);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  height: 100%;
+  opacity: 0;
+  transform: translateY(20px);
+  animation: consultantCardAppear 0.5s ease-out forwards;
+}
+
+.consultant-main-card:nth-child(1) { animation-delay: 0.1s; }
+.consultant-main-card:nth-child(2) { animation-delay: 0.2s; }
+.consultant-main-card:nth-child(3) { animation-delay: 0.3s; }
+.consultant-main-card:nth-child(4) { animation-delay: 0.4s; }
+.consultant-main-card:nth-child(5) { animation-delay: 0.5s; }
+.consultant-main-card:nth-child(6) { animation-delay: 0.6s; }
+
+.consultant-main-card:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.1);
+  border-color: rgba(66, 153, 225, 0.3);
+}
+
+.consultant-main-card-icon {
+  width: 64px;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  border-radius: 16px;
+  margin-bottom: 1.5rem;
+  transition: all 0.3s ease;
+}
+
+.consultant-main-card-icon svg {
+  color: white;
+  font-size: 24px;
+  transition: all 0.3s ease;
+}
+
+.consultant-main-card:hover .consultant-main-card-icon {
+  transform: scale(1.1);
+  background: linear-gradient(135deg, #8b5cf6, #6366f1);
+}
+
+.consultant-main-card:hover .consultant-main-card-icon svg {
+  transform: scale(1.1);
+}
+
+.consultant-main-card-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #2d3748;
+  margin-bottom: 0.75rem;
+}
+
+.consultant-main-card-description {
+  font-size: 0.95rem;
+  color: #718096;
+  line-height: 1.5;
+}
+
+@media (max-width: 1024px) {
+  .consultant-main-grid {
+    grid-template-columns: repeat(2, 1fr);
+    max-width: 800px;
+  }
+}
+
+@media (max-width: 768px) {
+  .consultant-main-container {
+    padding: 1rem 0;
+  }
+
+  .consultant-main-header {
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+  }
+
+  .consultant-main-title {
+    font-size: 2rem;
+  }
+
+  .consultant-main-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.5rem;
+    padding: 0 1rem;
+  }
+
+  .consultant-main-card {
+    padding: 1.5rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .consultant-main-title {
+    font-size: 1.75rem;
+  }
+
+  .consultant-main-subtitle {
+    font-size: 1rem;
+  }
+
+  .consultant-main-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Animation classes */
+.consultant-main-fade-in {
+  opacity: 0;
+  animation: consultantMainFadeIn 0.6s ease-out forwards;
+}
+
+.consultant-main-slide-up {
+  opacity: 0;
+  animation: consultantMainSlideUp 0.6s ease-out forwards;
+}
+
+@keyframes consultantMainFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes consultantMainSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes consultantCardAppear {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+    filter: blur(5px);
+  }
+  50% {
+    filter: blur(0);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+    filter: blur(0);
+  }
+}
+
+@keyframes consultantCardFloat {
+  0%, 100% {
+    transform: translateY(-8px);
+  }
+  50% {
+    transform: translateY(-12px);
+  }
+} 

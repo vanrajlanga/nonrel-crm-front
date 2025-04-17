@@ -343,8 +343,8 @@ const UserProfile = () => {
 
   return (
     <div className="user-profile-container">
-      <button className="user-profile-back-btn" onClick={() => navigate('/')}>
-        <BsArrowLeft /> Back to Dashboard
+      <button className="user-profile-back-btn" onClick={() => navigate('/consultants')}>
+        <BsArrowLeft /> Back to Consultants
       </button>
 
       <div className="user-profile-header">

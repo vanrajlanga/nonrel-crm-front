@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import Axios from '../../services/api';
 import Toast from '../common/Toast';
-import {  BsChevronLeft, BsChevronRight, BsCurrencyDollar } from 'react-icons/bs';
+import {  BsChevronLeft, BsChevronRight, BsCurrencyDollar, BsArrowLeft } from 'react-icons/bs';
+import { useNavigate } from 'react-router-dom';
 import Filter from '../Filter';
 import Modal from 'react-bootstrap/Modal';
 import Form from 'react-bootstrap/Form';
@@ -14,7 +15,7 @@ const ConsultantJobDetails = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
-
+  const navigate = useNavigate();
   // Pagination states
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
@@ -696,13 +697,16 @@ const ConsultantJobDetails = () => {
   return (
     <div className="container">
       <Toast.ToastContainer />
-      <div className="consultant-header text-center">
-        <h2 className="display-6 fw-bold mb-3">
-            Project Onboarding Fee
-        </h2>
-        <p className="mb-0">
-          View all consultant job placements
-        </p>
+      <button 
+        className="user-mgmt-back-btn"
+        onClick={() => navigate('/consultants')}
+      >
+        <BsArrowLeft /> Back to Consultants
+      </button>
+      <div className="user-mgmt-header" style={{ textAlign: 'center', marginBottom: '2rem' }}>
+        <div className="user-mgmt-header-actions" style={{ justifyContent: 'center' }}>
+          <h2 className="user-mgmt-title">Project Onboarding Fee</h2>
+        </div>
       </div>
 
       {loading && (

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import { BsPersonFill, BsBuildingsFill, BsPeopleFill, BsFileEarmarkText, BsPersonLinesFill } from 'react-icons/bs';
 import { MdOutlinePayment } from "react-icons/md";
+import './ConsultantMain.css';
 
 const ConsultantMain = () => {
   const navigate = useNavigate();
@@ -16,51 +17,51 @@ const ConsultantMain = () => {
   const registrationCards = [
     {
       title: 'Users',
-      description: 'User Details',
+      description: 'Manage user accounts and permissions',
       path: '/consultants/userManagement',
-      icon: <BsPersonFill size={40} className="text-primary" />,
+      icon: <BsPersonFill size={24} />,
       showForRoles: ['superAdmin']
     },
     {
       title: 'All Registration',
-      description: 'View and manage all consultant registrations in one place',
+      description: 'View and manage all consultant registrations in one centralized dashboard',
       path: '/consultants/consultantsDetails',
-      icon: <BsBuildingsFill size={40} className="text-primary" />,
+      icon: <BsBuildingsFill size={24} />,
       showForRoles: ['superAdmin', 'coordinator', 'teamLead', 'resumeBuilder']
     },
     {
       title: 'Consultants Job Details',
-      description: 'Consultants Job Details',
+      description: 'Track and manage consultant job placements and assignments',
       path: '/consultants/consultantJobDetails',
-      icon: <BsPeopleFill size={40} className="text-primary" />,
+      icon: <BsPeopleFill size={24} />,
       showForRoles: ['superAdmin', 'coordinator', 'teamLead']
     },
     {
       title: 'Consultants Agreement Details',
-      description: 'Consultants Agreement Details',
+      description: 'Handle consultant agreements and contract management',
       path: '/consultants/consultantAggrementDetails',
-      icon: <BsFileEarmarkText size={40} className="text-primary" />,
+      icon: <BsFileEarmarkText size={24} />,
       showForRoles: ['superAdmin']
     },
     {
       title: 'Consultants Interview Details',
-      description: 'Consultants Interview Details',
+      description: 'Schedule and track consultant interviews and assessments',
       path: '/consultants/consultantInterviewDetails',
-      icon: <BsPersonLinesFill size={40} className="text-primary" />,
+      icon: <BsPersonLinesFill size={24} />,
       showForRoles: ['superAdmin', 'coordinator', 'teamLead']
     },
     {
       title: 'Consultants Fees Details',
-      description: 'Consultants Fees Details',
+      description: 'Manage consultant fees, payments, and financial records',
       path: '/consultants/consultantFeesDetails',
-      icon: <MdOutlinePayment size={40} className="text-primary" />,
+      icon: <MdOutlinePayment size={24} />,
       showForRoles: ['superAdmin', 'admin']
     },
     {
       title: 'Personal Details',
-      description: 'Personal Details',
+      description: 'View and update your personal information and profile',
       path: '/consultants/personalDetails',
-      icon: <BsPersonFill size={40} className="text-primary" />,
+      icon: <BsPersonFill size={24} />,
       showForRoles: ['Candidate']
     }
   ];
@@ -70,48 +71,34 @@ const ConsultantMain = () => {
   );
 
   return (
-    <div className="min-vh-100 py-4" style={{ background: 'linear-gradient(120deg, #f0f2f5 0%, #e3f2fd 100%)' }}>
+    <div className="consultant-main-container">
       <div className="container">
-        <div className="text-center mb-5">
-          <h1 className="display-4 fw-bold text-primary mb-3">
+        <div className={`consultant-main-header consultant-main-fade-in`}>
+          <h1 className="consultant-main-title">
             Welcome to Consultant Portal
           </h1>
-          <h5 className="text-secondary mb-4">
-            Choose your registration type to get started
-          </h5>
+          <p className="consultant-main-subtitle">
+            Access and manage all your consultant-related tasks from one central location
+          </p>
         </div>
 
-        <div className="row g-4 justify-content-center">
+        <div className="consultant-main-grid">
           {filteredCards.map((card, index) => (
-            <div className="col-12 col-sm-6 col-md-4" key={index}>
-              <div 
-                className="card h-100 border-0 shadow-sm" 
-                style={{ 
-                  transition: 'transform 0.2s, box-shadow 0.2s',
-                  cursor: 'pointer'
-                }}
-                onClick={() => navigate(card.path)}
-                onMouseEnter={e => {
-                  e.currentTarget.style.transform = 'translateY(-8px)';
-                  e.currentTarget.style.boxShadow = '0 8px 40px -12px rgba(0,0,0,0.3)';
-                }}
-                onMouseLeave={e => {
-                  e.currentTarget.style.transform = 'none';
-                  e.currentTarget.style.boxShadow = '';
-                }}
-              >
-                <div className="card-body text-center p-4">
-                  <div className="mb-3">
-                    {card.icon}
-                  </div>
-                  <h4 className="card-title mb-3 text-primary">
-                    {card.title}
-                  </h4>
-                  <p className="card-text text-secondary">
-                    {card.description}
-                  </p>
-                </div>
+            <div 
+              key={index}
+              className={`consultant-main-card consultant-main-slide-up`}
+              onClick={() => navigate(card.path)}
+              style={{ animationDelay: `${index * 0.1}s` }}
+            >
+              <div className="consultant-main-card-icon">
+                {card.icon}
               </div>
+              <h3 className="consultant-main-card-title">
+                {card.title}
+              </h3>
+              <p className="consultant-main-card-description">
+                {card.description}
+              </p>
             </div>
           ))}
         </div>

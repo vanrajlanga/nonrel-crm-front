@@ -10,12 +10,12 @@
     z-index: 1000;
     background-color: white;
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    flex-shrink: 0;
 }
 
 .layout__main {
-    flex: 1;
-    padding: 20px;
-    margin-bottom: 60px; /* Height of footer */
+    flex: 1 0 auto;
+    background-color: #f8f9fa;
 }
 
 .layout__footer {
@@ -24,4 +24,15 @@
     background-color: white;
     box-shadow: 0 -2px 4px rgba(0,0,0,0.1);
     height: 60px;
+    flex-shrink: 0;
+}
+
+
+
+/* Media Queries */
+@media (max-width: 768px) {
+    .layout__main {
+        padding: 15px;
+    }
+    
 }

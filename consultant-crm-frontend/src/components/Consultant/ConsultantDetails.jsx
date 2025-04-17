@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Axios from '../../services/api';
 import 'bootstrap/dist/css/bootstrap.min.css';
-import { BsChevronLeft, BsChevronRight, BsEye, BsLayoutThreeColumns, BsBriefcase, BsPeople, BsFileText, BsCalendarEvent } from 'react-icons/bs';
+import { BsChevronLeft, BsChevronRight,BsArrowLeft, BsEye, BsLayoutThreeColumns, BsBriefcase, BsPeople, BsFileText, BsCalendarEvent } from 'react-icons/bs';
 import Toast from '../common/Toast';
 import './ConsultantDetails.css';
 import { useNavigate } from 'react-router-dom';
@@ -24,6 +24,7 @@ const ConsultantDetails = () => {
   // Pagination states
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
+  const [totalPages, setTotalPages] = useState(1);
   const [pageSizeOptions] = useState([5, 10, 20, 50]);
 
   const [visibleColumns, setVisibleColumns] = useState({});
@@ -59,7 +60,7 @@ const ConsultantDetails = () => {
 
   const [showInterviewModal, setShowInterviewModal] = useState(false);
   const [selectedConsultantForInterview, setSelectedConsultantForInterview] = useState(null);
-  const [jobs, setJobs] = useState([]);
+
   const [interviewFormData, setInterviewFormData] = useState({
     date: '',
     timeEST: '',
@@ -89,29 +90,39 @@ const ConsultantDetails = () => {
     try {
       setLoading(true);
       setError(null);
-      const res = await Axios.get('/consultants');
       
-      if (!res.data || res.data.length === 0) {
+      const response = await Axios.get('/consultants', {
+        params: {
+          page: currentPage,
+          limit: itemsPerPage
+        }
+      });
+      
+      if (!response.data) {
+        throw new Error('No data received from server');
+      }
+
+      const consultantsData = Array.isArray(response.data) ? response.data : response.data.consultants || [];
+      
+      if (consultantsData.length === 0) {
         setConsultants([]);
         setFilteredConsultants([]);
-        setLoading(false);
         return;
       }
       
       // Get all possible field names from the first consultant
-      const allFields = res.data.length > 0 
-        ? Object.keys(res.data[0])
-            .filter(key => 
-              !key.startsWith('_') && 
-              key !== 'id' && 
-              key !== 'updatedAt' &&
-              key.toLowerCase() !== 'assignedcoordinatorid' &&
-              key.toLowerCase() !== 'assignedteamleadid' &&
-              key.toLowerCase() !== 'assignmentdate')
-        : [];
+      const allFields = Object.keys(consultantsData[0])
+        .filter(key => 
+          !key.startsWith('_') && 
+          key !== 'id' && 
+          key !== 'updatedAt' &&
+          key.toLowerCase() !== 'assignedcoordinatorid' &&
+          key.toLowerCase() !== 'assignedteamleadid' &&
+          key.toLowerCase() !== 'assignmentdate'
+        );
 
       // Transform the data to include all fields, even if null
-      const consultantsWithFields = res.data.map(consultant => {
+      const consultantsWithFields = consultantsData.map(consultant => {
         const fields = allFields.map(fieldName => {
           let displayName = fieldName;
           let value = consultant[fieldName];
@@ -121,7 +132,6 @@ const ConsultantDetails = () => {
           } else if (fieldName === 'paymentStatus') {
             displayName = 'payment status';
           } else if (fieldName === 'coordinators') {
-            // Skip the original coordinators field as we'll add two new fields
             return null;
           }
           
@@ -129,19 +139,20 @@ const ConsultantDetails = () => {
             fieldName: displayName,
             value: value ?? null
           };
-        }).filter(Boolean); // Remove null entries
+        }).filter(Boolean);
 
-        // Add coordinator1 and coordinator2 as separate fields
+        // Add coordinator fields
         if (consultant.coordinators && Array.isArray(consultant.coordinators)) {
-          fields.push({
-            fieldName: 'coordinator1',
-            value: consultant.coordinators[0]?.username || '----'
-          });
-
-          fields.push({
-            fieldName: 'coordinator2',
-            value: consultant.coordinators[1]?.username || '----'
-          });
+          fields.push(
+            {
+              fieldName: 'coordinator1',
+              value: consultant.coordinators[0]?.username || '----'
+            },
+            {
+              fieldName: 'coordinator2',
+              value: consultant.coordinators[1]?.username || '----'
+            }
+          );
         } else {
           fields.push(
             { fieldName: 'coordinator1', value: '----' },
@@ -152,9 +163,10 @@ const ConsultantDetails = () => {
         return {
           ...consultant,
           isJob: consultant.ConsultantJobDetail?.isJob || false,
-          isPlaced: consultant.isPlaced || false,
-          isHold: consultant.isHold || false,
-          isActive: consultant.isActive || false,
+          isPlaced: consultant.ConsultantJobDetail?.isPlaced || consultant.isPlaced || false,
+          isHold: consultant.ConsultantJobDetail?.isHold || consultant.isHold || false,
+          isActive: consultant.ConsultantJobDetail?.isActive || consultant.isActive || false,
+          isOfferPending: consultant.ConsultantJobDetail?.isOfferPending || consultant.isOfferPending || false,
           fields,
           allFields: [...allFields.filter(field => field !== 'coordinators'), 'coordinator1', 'coordinator2']
         };
@@ -163,10 +175,16 @@ const ConsultantDetails = () => {
       setConsultants(consultantsWithFields);
       setFilteredConsultants(consultantsWithFields);
 
+      // Set total items and pages if pagination info is available
+      if (response.data.totalItems) {
+        setTotalPages(response.data.totalPages || Math.ceil(response.data.totalItems / itemsPerPage));
+      } else {
+        setTotalPages(Math.ceil(consultantsWithFields.length / itemsPerPage));
+      }
+
       // Set up filter configuration
       const uniqueTechnologies = [...new Set(consultantsWithFields.map(item => item.technology))].filter(Boolean);
       const uniqueVisaStatuses = [...new Set(consultantsWithFields.map(item => item.visaStatus))].filter(Boolean);
-      const uniqueTeamLeads = [...new Set(consultantsWithFields.map(item => item.teamLead?.username))].filter(Boolean);
 
       setFilterConfig([
         {
@@ -226,7 +244,7 @@ const ConsultantDetails = () => {
         }
       ]);
 
-      // Initialize visible columns
+      // Initialize visible columns with pre-selected fields
       const initialColumns = {};
       const preSelectedFields = [
         'fulllegalname',
@@ -247,13 +265,23 @@ const ConsultantDetails = () => {
       });
       
       setVisibleColumns(initialColumns);
+
     } catch (error) {
       console.error('Error fetching consultants:', error);
-      if (error.response?.status === 404) {
-        setConsultants([]);
-        setFilteredConsultants([]);
+      setConsultants([]);
+      setFilteredConsultants([]);
+      
+      if (error.response?.status === 401) {
+        Toast.error('Session expired. Please login again.');
+        localStorage.clear();
+        navigate('/login');
+      } else if (error.response?.status === 403) {
+        Toast.error('Access forbidden: insufficient privileges');
+        navigate('/');
+      } else if (error.response?.status === 404) {
+        Toast.error('No consultants found');
       } else {
-        const errorMessage = error.response?.data?.message || 'Failed to fetch consultants';
+        const errorMessage = error.response?.data?.message || error.message || 'Failed to fetch consultants';
         setError(errorMessage);
         Toast.error(errorMessage);
       }
@@ -370,9 +398,11 @@ const ConsultantDetails = () => {
   const indexOfLastConsultant = currentPage * itemsPerPage;
   const indexOfFirstConsultant = indexOfLastConsultant - itemsPerPage;
   const currentConsultants = filteredConsultants.slice(indexOfFirstConsultant, indexOfLastConsultant);
-  
-  // Calculate total pages
-  const totalPages = Math.ceil(filteredConsultants.length / itemsPerPage);
+
+  useEffect(() => {
+    const calculatedTotalPages = Math.ceil(filteredConsultants.length / itemsPerPage);
+    setTotalPages(calculatedTotalPages);
+  }, [filteredConsultants, itemsPerPage]);
 
   // Generate page numbers array for pagination
   const getPageNumbers = () => {
@@ -896,33 +926,6 @@ const ConsultantDetails = () => {
     }
   };
 
-  const calculateIST = (estTime) => {
-    // Add 9 hours and 30 minutes to EST to get IST
-    const [hours, minutes] = estTime.split(':');
-    let istHours = parseInt(hours) + 9;
-    let istMinutes = parseInt(minutes) + 30;
-    
-    if (istMinutes >= 60) {
-      istHours += 1;
-      istMinutes -= 60;
-    }
-    if (istHours >= 24) {
-      istHours -= 24;
-    }
-    
-    return `${istHours.toString().padStart(2, '0')}:${istMinutes.toString().padStart(2, '0')}`;
-  };
-
-  const handleTimeESTChange = (e) => {
-    const estTime = e.target.value;
-    const istTime = calculateIST(estTime);
-    setInterviewFormData(prev => ({
-      ...prev,
-      timeEST: estTime,
-      timeIST: istTime
-    }));
-  };
-
   const handleInterviewModalOpen = (consultant) => {
     setSelectedConsultantForInterview(consultant);
     setInterviewFormData({
@@ -1008,13 +1011,16 @@ const ConsultantDetails = () => {
   return (
     <div className="container">
       <Toast.ToastContainer />
-      <div className="consultant-header text-center">
-        <h2 className="display-6 fw-bold mb-3">
-          Consultant Registration Fee
-        </h2>
-        <p className="mb-0">
-          View and manage consultant information
-        </p>
+      <button 
+        className="user-mgmt-back-btn"
+        onClick={() => navigate('/consultants')}
+      >
+        <BsArrowLeft /> Back to Consultants
+      </button>
+      <div className="user-mgmt-header" style={{ textAlign: 'center', marginBottom: '2rem' }}>
+        <div className="user-mgmt-header-actions" style={{ justifyContent: 'center' }}>
+          <h2 className="user-mgmt-title">Consultant Registration Fee</h2>
+        </div>
       </div>
 
       {userRole === 'superAdmin' && (

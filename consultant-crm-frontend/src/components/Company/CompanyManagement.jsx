@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Axios from '../../services/api';
 import Toast from '../common/Toast';
-import { toast, ToastContainer } from 'react-toastify';
+import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import './CompanyManagement.css';
 import { Modal, Form, Button, Accordion, Card } from 'react-bootstrap';
@@ -257,82 +257,87 @@ const CompanyManagement = () => {
   };
 
   return (
-    <div className="company-management-container">
+    <div className="company-mgmt-container">
       <Toast.ToastContainer />
       
-      <div className="header-section">
-        <h2 className="title">Company Management</h2>
+      <div className="company-mgmt-header">
+        <h2 className="company-mgmt-title">Company Management</h2>
+        <p className="company-mgmt-subtitle">Manage your company listings and job postings</p>
         {userRole === 'superAdmin' && (
           <Button 
             variant="primary" 
-            className="add-company-btn"
+            className="company-mgmt-add-btn"
             onClick={() => {
               resetCompanyForm();
               setShowCompanyModal(true);
             }}
           >
-            <BsPlus /> Add Company
+            <BsPlus size={20} /> Add New Company
           </Button>
         )}
       </div>
 
       {loading ? (
-        <div className="text-center p-5">
-          <div className="spinner-border" role="status">
+        <div className="company-mgmt-loading">
+          <div className="company-mgmt-spinner spinner-border" role="status">
             <span className="visually-hidden">Loading...</span>
           </div>
+          <p className="company-mgmt-loading-text">Loading companies...</p>
         </div>
       ) : (
-        <div className="companies-list">
+        <div className="company-mgmt-list">
           <Accordion>
             {companies.map((company) => (
-              <Accordion.Item key={company.id} eventKey={company.id.toString()}>
-                <Accordion.Header>
-                  <div className="company-header">
-                    <BsBuilding className="company-icon" />
-                    <span className="company-name">{company.companyName}</span>
-                    <span className="company-location">
+              <Accordion.Item key={company.id} eventKey={company.id.toString()} className="company-mgmt-item">
+                <Accordion.Header className="company-mgmt-accordion-btn">
+                  <div className="company-mgmt-header-content">
+                    <BsBuilding className="company-mgmt-icon" />
+                    <span className="company-mgmt-name">{company.companyName}</span>
+                    <span className="company-mgmt-location">
                       {company.city}, {company.country}
                     </span>
                   </div>
                 </Accordion.Header>
                 <Accordion.Body>
                   {userRole === 'superAdmin' && (
-                    <div className="company-actions mb-3">
+                    <div className="company-mgmt-actions">
                       <Button 
                         variant="outline-primary" 
                         size="sm"
+                        className="company-mgmt-btn"
                         onClick={() => handleEditCompany(company)}
                       >
-                        <BsPencil /> Edit Company
-                      </Button>
-                      <Button 
-                        variant="outline-danger" 
-                        size="sm"
-                        onClick={() => handleDeleteCompany(company.id)}
-                      >
-                        <BsTrash /> Delete Company
+                        <BsPencil /> Edit Details
                       </Button>
                       <Button 
                         variant="outline-success" 
                         size="sm"
+                        className="company-mgmt-btn"
                         onClick={() => handleAddJob(company.id)}
                       >
-                        <BsBriefcase /> Add Job
+                        <BsBriefcase /> Add Job Position
+                      </Button>
+                      <Button 
+                        variant="outline-danger" 
+                        size="sm"
+                        className="company-mgmt-btn"
+                        onClick={() => handleDeleteCompany(company.id)}
+                      >
+                        <BsTrash /> Remove Company
                       </Button>
                     </div>
                   )}
 
-                  <div className="jobs-list">
-                    <h5>Job Postings</h5>
+                  <div className="company-mgmt-jobs">
+                    <h5 className="company-mgmt-jobs-title">Available Positions</h5>
                     {company.CompanyJobs && company.CompanyJobs.length > 0 ? (
-                      <div className="job-cards">
+                      <div className="company-mgmt-jobs-grid">
                         {company.CompanyJobs.map((job) => (
-                          <Card key={job.id} className="job-card">
+                          <Card key={job.id} className="company-mgmt-job-card">
                             <Card.Body>
                               <div className="d-flex justify-content-between align-items-center">
-                                <div>
-                                  <h6 className="mb-0">{job.jobTitle}</h6>
+                                <div className="company-mgmt-job-info">
+                                  <h6 className="company-mgmt-job-title">{job.jobTitle}</h6>
                                   <small className="text-muted">
                                     Posted: {new Date(job.createdAt).toLocaleDateString()}
                                   </small>
@@ -341,6 +346,7 @@ const CompanyManagement = () => {
                                   <Button
                                     variant="outline-danger"
                                     size="sm"
+                                    className="company-mgmt-btn"
                                     onClick={() => handleDeleteJob(company.id, job.id)}
                                   >
                                     <BsTrash />
@@ -352,7 +358,7 @@ const CompanyManagement = () => {
                         ))}
                       </div>
                     ) : (
-                      <p className="text-muted">No job postings yet</p>
+                      <p className="company-mgmt-no-jobs">No positions available at this time</p>
                     )}
                   </div>
                 </Accordion.Body>

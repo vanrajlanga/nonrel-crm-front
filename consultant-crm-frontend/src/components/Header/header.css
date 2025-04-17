@@ -1,282 +1,221 @@
 /* header.css */
 
+/* Modern Header Styles */
 .header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    background: #000;  /* black background */
-    color: #fff;
-    padding: 0.5rem 1.5rem;
-    position: relative;
-    font-family: 'Inter', sans-serif; /* or your preferred font */
-}
-  
-/* Left brand/logo */
-.header__brand .brand-title {
-    margin: 0;
-    font-size: 1.25rem;
-    font-weight: bold;
-}
-  
-/* Center nav container (pill-shaped) */
-.header__nav {
-    position: absolute;  /* absolute so we can center it horizontally */
-    left: 50%;
-    transform: translateX(-50%);
-    background-color: #191919; /* slightly different from #000 for contrast */
-    padding: 0.8rem 1rem;
-    border-radius: 999px;      /* pill shape */
-}
-  
-.header__nav ul {
-    display: flex;
-    gap: 1.5rem;       /* space between nav links */
-    list-style: none;
-    margin: 0;
-    padding: 0;
-    align-items: center;
-}
-  
-.header__nav a {
-    text-decoration: none;
-    color: #fff;
-    font-size: 0.95rem;
-    transition: color 0.3s;
-}
-  
-.header__nav a:hover {
-    color: #ccc;
-}
-  
-/* Right button container */
-.header__cta {
-    display: flex;
-    align-items: center;
-}
-  
-/* "Get Started" button */
-.cta-button {
-    background-color: #fff;
-    color: #000;
-    border: none;
-    border-radius: 999px;
-    padding: 0.5rem 1rem;
-    font-weight: 500;
-    cursor: pointer;
-    transition: background-color 0.3s, color 0.3s;
-}
-  
-.cta-button:hover {
-    background-color: #ccc;
-    color: #000;
-}
-
-/* Search bar styles */
-.header__search {
-    position: relative;
-    margin-left: 1.5rem;
-    width: 30%;
-}
-
-.search-input {
-    width: 100%;
-    height: 2.75rem;
-    padding: 0 1rem 0 2.75rem;
-    background: var(--light-input-bg);
-    border: 1px solid var(--light-border);
-    border-radius: var(--border-radius-lg);
-    color: var(--light-text);
-    font-size: .875rem;
-    transition: var(--transition-normal);
-}
-
-.search-icon {
-    position: absolute;
-    left: 1rem;
-    top: 50%;
-    transform: translateY(-50%);
-    color: var(--light-text-secondary);
-    font-size: 1.25rem;
-}
-
-.search-input:focus {
-    outline: none;
-    width: 250px;
-    background: #444;
-}
-
-.search-input::placeholder {
-    color: #999;
-}
-
-.user-section {
   display: flex;
   align-items: center;
-  gap: 1rem;
-  background-color: rgba(0, 0, 0, 0.1);
-  padding: 0.5rem 1rem;
-  border-radius: 999px;
-  margin-left: 1rem;
+  justify-content: space-between;
+  background: linear-gradient(to right, #ffffff, #f8f9fa);
+  color: #2d3748;
+  padding: 0.3rem 1rem;
+  position: relative;
+  font-family: 'Inter', sans-serif;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  border-bottom: 1px solid #e2e8f0;
 }
 
-.username {
-  color: #fff;
-  font-weight: 600;
-  font-size: 0.9rem;
-  padding: 0;
-  display: flex;
-  align-items: center;
-  border-radius: 5px;
-  padding: 5px;
-  background: linear-gradient(45deg, #4299e1, #667eea);
-  cursor: default;
-}
-
-.username:hover {
-  background: linear-gradient(45deg, #4299e1, #667eea);
-  transform: none;
-}
-
-.username::before {
-  margin-right: 0.5rem;
-  font-size: 1.1rem;
-}
-
-/* Update the CTA button styles when inside user-section */
-.user-section .cta-button {
-  background-color: #ff3e3e;
-  color: white;
-  padding: 0.4rem 1rem;
-  font-size: 0.9rem;
+/* Brand/Logo Section */
+.header__brand {
+  cursor: pointer;
+  padding: 0.5rem;
+  border-radius: 8px;
   transition: all 0.3s ease;
 }
 
-.user-section .cta-button:hover {
-  background-color: #ff1f1f;
-  color: white;
-  transform: translateY(-1px);
+.brand-title {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: bold;
+  background: linear-gradient(135deg, #2d3748 0%, #4a5568 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  letter-spacing: -0.5px;
 }
 
+/* CTA Section */
+.header__cta {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+/* User Section */
+.user-section {
+  display: flex;
+  align-items: center;
+  
+  background: rgba(255, 255, 255, 0.9);
+  padding: 0.2rem 1rem;
+  border-radius: 12px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  border: 1px solid #e2e8f0;
+}
+
+.username-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+}
+
+.user-icon {
+  font-size: 1.2rem;
+  color: #4a5568;
+}
+
+.username {
+  color: #ffffff;
+  font-weight: 500;
+  font-size: 0.95rem;
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  padding: 0.25rem 0.75rem;
+  border-radius: 6px;
+  transition: all 0.3s ease;
+  border: 1px solid #e2e8f0;
+}
+
+/* Notification Styles */
 .notification-container {
   position: relative;
-  margin-right: 1rem;
 }
 
 .notification-btn {
   background: none;
   border: none;
-  color: white;
-  font-size: 1.5rem;
+  color: #4a5568;
+  font-size: 1.25rem;
   cursor: pointer;
-  position: relative;
   padding: 0.5rem;
   display: flex;
   align-items: center;
   justify-content: center;
+  transition: all 0.3s ease;
+}
+
+.notification-btn:hover {
+  color: #2d3748;
 }
 
 .notification-badge {
   position: absolute;
   top: -5px;
   right: -5px;
-  background-color: #ff3e3e;
+  background: linear-gradient(135deg, #e53e3e, #c53030);
   color: white;
   border-radius: 50%;
   padding: 0.25rem 0.5rem;
   font-size: 0.75rem;
   font-weight: bold;
-}
-
-.notification-dropdown {
-  position: absolute;
-  top: 100%;
-  right: 0;
-  width: 350px;
-  background-color: white;
-  border-radius: 8px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-  z-index: 1000;
-  max-height: 500px;
-  overflow-y: auto;
-}
-
-.notification-header {
-  padding: 1rem;
-  border-bottom: 1px solid #e2e8f0;
+  min-width: 20px;
+  height: 20px;
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  position: sticky;
-  top: 0;
-  background-color: white;
-  z-index: 1;
+  justify-content: center;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
-.notification-header h3 {
-  margin: 0;
-  font-size: 1rem;
-  color: #2d3748;
-}
-
-.notification-count {
-  background-color: #edf2f7;
-  color: #4a5568;
-  padding: 0.25rem 0.5rem;
-  border-radius: 999px;
-  font-size: 0.75rem;
-}
-
-.notification-list {
-  padding: 0.5rem;
-}
-
-.notification-item {
-  padding: 1rem;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: background-color 0.2s;
-  border-bottom: 1px solid #e2e8f0;
-}
-
-.notification-item:last-child {
-  border-bottom: none;
-}
-
-.notification-item:hover {
-  background-color: #f7fafc;
-}
-
-.notification-content {
-  margin-bottom: 0.5rem;
-}
-
-.notification-content h4 {
-  margin: 0;
-  font-size: 0.9rem;
-  color: #2d3748;
-  font-weight: 600;
-}
-
-.notification-content p {
-  margin: 0.25rem 0;
-  font-size: 0.8rem;
-  color: #718096;
-}
-
-.notification-documents {
-  color: #4299e1 !important;
+/* CTA Button */
+.cta-button {
+  background: linear-gradient(135deg, #e14242, #ce3131);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 0.4rem 0.7rem;
   font-weight: 500;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
-.notification-time {
-  font-size: 0.75rem;
-  color: #a0aec0;
-  text-align: right;
+.cta-button:hover {
+  background: linear-gradient(135deg, #ce3131, #b02b2b);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
-.no-notifications {
-  padding: 2rem;
-  text-align: center;
-  color: #718096;
-  font-size: 0.9rem;
+/* Responsive Design */
+@media (max-width: 768px) {
+  .header {
+    padding: 0.75rem 1rem;
+  }
+
+  .brand-title {
+    font-size: 1.25rem;
+  }
+
+  .user-section {
+    padding: 0.5rem;
+    gap: 0.75rem;
+  }
+
+  .username {
+    font-size: 0.85rem;
+    padding: 0.25rem 0.5rem;
+  }
+
+  .cta-button {
+    padding: 0.5rem 1rem;
+    font-size: 0.85rem;
+  }
+}
+
+@media (max-width: 640px) {
+  .user-section {
+    background: none;
+    padding: 0;
+    border: none;
+    box-shadow: none;
+  }
+
+  .username-wrapper {
+    display: none;
+  }
+}
+
+/* Animation Classes */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    transform: scale(0.9);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.fade-in {
+  animation: fadeIn 0.3s ease-out forwards;
+}
+
+.slide-in {
+  animation: slideIn 0.3s ease-out forwards;
+}
+
+.scale-in {
+  animation: scaleIn 0.3s ease-out forwards;
 }

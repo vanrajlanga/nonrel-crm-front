@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Axios from '../../services/api';
 import './usermanagement.css';
-import { BsArrowLeft } from 'react-icons/bs';
+import { BsArrowLeft, BsPersonPlus, BsPencil, BsTrash } from 'react-icons/bs';
+import Filter from '../Filter';
 
 const CreateUserModal = ({ onClose, onSave, token }) => {
   const [username, setUsername] = useState('');
@@ -27,12 +28,14 @@ const CreateUserModal = ({ onClose, onSave, token }) => {
       alert(error.response?.data?.message || 'Failed to create user');
     }
   };
+
   return (
-    <div className="modal">
-      <div className="modal-content">
-        <h3>Create New User</h3>
-        <form onSubmit={handleSubmit}>
+    <div className="user-mgmt-modal">
+      <div className="user-mgmt-modal-content">
+        <h3 className="user-mgmt-modal-title">Create New User</h3>
+        <form className="user-mgmt-form" onSubmit={handleSubmit}>
           <input
+            className="user-mgmt-input"
             type="text"
             value={username}
             onChange={(e) => setUsername(e.target.value)}
@@ -40,6 +43,7 @@ const CreateUserModal = ({ onClose, onSave, token }) => {
             required
           />
           <input
+            className="user-mgmt-input"
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
@@ -47,13 +51,18 @@ const CreateUserModal = ({ onClose, onSave, token }) => {
             required
           />
           <input
+            className="user-mgmt-input"
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             placeholder="Password"
             required
           />
-          <select value={role} onChange={(e) => setRole(e.target.value)}>
+          <select 
+            className="user-mgmt-select"
+            value={role} 
+            onChange={(e) => setRole(e.target.value)}
+          >
             <option value="Candidate">Candidate</option>
             <option value="teamLead">Team Lead</option>
             <option value="coordinator">Coordinator</option>
@@ -64,9 +73,13 @@ const CreateUserModal = ({ onClose, onSave, token }) => {
             <option value="admin">Admin</option>
             <option value="superAdmin">Super Admin</option>
           </select>
-          <div className="modal-actions">
-            <button type="submit">Create</button>
-            <button type="button" onClick={onClose}>Cancel</button>
+          <div className="user-mgmt-modal-actions">
+            <button type="button" className="user-mgmt-modal-btn user-mgmt-modal-btn-secondary" onClick={onClose}>
+              Cancel
+            </button>
+            <button type="submit" className="user-mgmt-modal-btn user-mgmt-modal-btn-primary">
+              Create
+            </button>
           </div>
         </form>
       </div>
@@ -110,11 +123,12 @@ const EditUserModal = ({ user, onClose, onSave, token }) => {
   };
 
   return (
-    <div className="modal">
-      <div className="modal-content">
-        <h3>Edit User</h3>
-        <form onSubmit={handleSubmit}>
+    <div className="user-mgmt-modal">
+      <div className="user-mgmt-modal-content">
+        <h3 className="user-mgmt-modal-title">Edit User</h3>
+        <form className="user-mgmt-form" onSubmit={handleSubmit}>
           <input
+            className="user-mgmt-input"
             type="text"
             value={username}
             onChange={(e) => setUsername(e.target.value)}
@@ -122,6 +136,7 @@ const EditUserModal = ({ user, onClose, onSave, token }) => {
             required
           />
           <input
+            className="user-mgmt-input"
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
@@ -129,12 +144,17 @@ const EditUserModal = ({ user, onClose, onSave, token }) => {
             required
           />
           <input
+            className="user-mgmt-input"
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             placeholder="New Password (optional)"
           />
-          <select value={role} onChange={(e) => setRole(e.target.value)}>
+          <select 
+            className="user-mgmt-select"
+            value={role} 
+            onChange={(e) => setRole(e.target.value)}
+          >
             <option value="Candidate">Candidate</option>
             <option value="teamLead">Team Lead</option>
             <option value="coordinator">Coordinator</option>
@@ -145,9 +165,13 @@ const EditUserModal = ({ user, onClose, onSave, token }) => {
             <option value="admin">Admin</option>
             <option value="superAdmin">Super Admin</option>
           </select>
-          <div className="modal-actions">
-            <button type="submit">Save</button>
-            <button type="button" onClick={onClose}>Cancel</button>
+          <div className="user-mgmt-modal-actions">
+            <button type="button" className="user-mgmt-modal-btn user-mgmt-modal-btn-secondary" onClick={onClose}>
+              Cancel
+            </button>
+            <button type="submit" className="user-mgmt-modal-btn user-mgmt-modal-btn-primary">
+              Save Changes
+            </button>
           </div>
         </form>
       </div>
@@ -157,13 +181,17 @@ const EditUserModal = ({ user, onClose, onSave, token }) => {
 
 const DeleteConfirmationModal = ({ user, onClose, onConfirm }) => {
   return (
-    <div className="modal">
-      <div className="modal-content delete-confirmation">
-        <h3>Confirm Delete</h3>
+    <div className="user-mgmt-modal">
+      <div className="user-mgmt-modal-content">
+        <h3 className="user-mgmt-modal-title">Confirm Delete</h3>
         <p>Are you sure you want to delete user "{user.username}"?</p>
-        <div className="modal-actions">
-          <button onClick={onConfirm} className="delete-btn">Delete</button>
-          <button onClick={onClose}>Cancel</button>
+        <div className="user-mgmt-modal-actions">
+          <button className="user-mgmt-modal-btn user-mgmt-modal-btn-secondary" onClick={onClose}>
+            Cancel
+          </button>
+          <button className="user-mgmt-modal-btn user-mgmt-modal-btn-primary" onClick={onConfirm}>
+            Delete
+          </button>
         </div>
       </div>
     </div>
@@ -172,6 +200,7 @@ const DeleteConfirmationModal = ({ user, onClose, onConfirm }) => {
 
 const UserManagement = () => {
   const [users, setUsers] = useState([]);
+  const [filteredUsers, setFilteredUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -180,10 +209,29 @@ const UserManagement = () => {
   const [deleteUser, setDeleteUser] = useState(null);
   const navigate = useNavigate();
   
-  // Get token directly using the correct key
   const token = localStorage.getItem('token');
   const role = localStorage.getItem('role');
-  
+
+  const filterConfig = [
+    {
+      name: 'role',
+      label: 'Role',
+      type: 'select',
+      defaultValue: 'all',
+      options: [
+        { value: 'all', label: 'All Roles' },
+        { value: 'superAdmin', label: 'Super Admin' },
+        { value: 'admin', label: 'Admin' },
+        { value: 'coordinator', label: 'Coordinator' },
+        { value: 'teamLead', label: 'Team Lead' },
+        { value: 'resumeBuilder', label: 'Resume Builder' },
+        { value: 'Candidate', label: 'Candidate' },
+        { value: 'Accounts', label: 'Accounts' },
+        { value: 'HR', label: 'HR' },
+        { value: 'Operational Manager', label: 'Operational Manager' }
+      ]
+    }
+  ];
 
   useEffect(() => {
     if (!token || role !== 'superAdmin') {
@@ -204,26 +252,72 @@ const UserManagement = () => {
         },
       };
       const response = await Axios.get('/users', config);
-      
-      // Check if response.data.users exists (if API returns { users: [...] })
-      // or if response.data itself is the array
       const userData = response.data?.users || response.data || [];
       
-      // Ensure it's an array
       if (!Array.isArray(userData)) {
         console.warn('API response is not an array:', userData);
         setUsers([]);
+        setFilteredUsers([]);
         return;
       }
       
       setUsers(userData);
+      setFilteredUsers(userData);
     } catch (error) {
       console.error('API Error:', error);
       setError('Failed to fetch users');
-      setUsers([]); // Ensure users is an empty array on error
+      setUsers([]);
+      setFilteredUsers([]);
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleSearchChange = (searchValue) => {
+    applyFiltersAndSearch(searchValue);
+  };
+
+  const applyFiltersAndSearch = (search = '', filterOptions = {}) => {
+    let filtered = [...users];
+    
+    // Apply search filter
+    if (search.trim() !== '') {
+      const searchLower = search.toLowerCase();
+      filtered = filtered.filter(user => 
+        user.username?.toLowerCase().includes(searchLower) ||
+        user.email?.toLowerCase().includes(searchLower)
+      );
+    }
+    
+    // Apply role filter
+    if (filterOptions.role && filterOptions.role !== 'all') {
+      filtered = filtered.filter(user => user.role === filterOptions.role);
+    }
+
+    // Apply date range filter
+    if (filterOptions.registrationDateFrom || filterOptions.registrationDateTo) {
+      const fromDate = filterOptions.registrationDateFrom ? new Date(filterOptions.registrationDateFrom) : null;
+      const toDate = filterOptions.registrationDateTo ? new Date(filterOptions.registrationDateTo) : null;
+      
+      filtered = filtered.filter(user => {
+        const registrationDate = new Date(user.createdAt);
+        
+        if (fromDate && toDate) {
+          return registrationDate >= fromDate && registrationDate <= toDate;
+        } else if (fromDate) {
+          return registrationDate >= fromDate;
+        } else if (toDate) {
+          return registrationDate <= toDate;
+        }
+        return true;
+      });
+    }
+    
+    setFilteredUsers(filtered);
+  };
+
+  const handleFilterApplied = (filterOptions) => {
+    applyFiltersAndSearch('', filterOptions);
   };
 
   const handleDeleteClick = (user) => {
@@ -256,57 +350,102 @@ const UserManagement = () => {
     setIsEditModalOpen(true);
   };
 
+  if (loading) {
+    return (
+      <div className="user-mgmt-container">
+        <div className="user-mgmt-loading">
+          <div className="user-mgmt-spinner"></div>
+          <p>Loading users...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="user-management-container">
+    <div className="user-mgmt-container">
       <button 
-        className="back-btn"
+        className="user-mgmt-back-btn"
         onClick={() => navigate('/consultants')}
       >
         <BsArrowLeft /> Back to Consultants
       </button>
       
-      <div className="header-section">
-        <div className="header-actions">
-          <h2>User Management</h2>
+      <div className="user-mgmt-header">
+        <div className="user-mgmt-header-actions">
+          <h2 className="user-mgmt-title">User Management</h2>
           <button 
-            className="add-user-btn"
+            className="user-mgmt-add-btn"
             onClick={() => setIsCreateModalOpen(true)}
           >
-            Add User
+            <BsPersonPlus /> Add User
           </button>
         </div>
       </div>
-      
-      {loading && <p>Loading users...</p>}
-      {error && <p className="error-message">{error}</p>}
-      {!loading && !error && (
-        <div className="users-list">
-          {users.map((user) => (
-            <div key={user.id} className="user-card">
-              <div className="user-info">
-                <h3>{user.username}</h3>
-                <p>{user.email}</p>
-                <p>Role: {user.role}</p>
-                <p>Created: {new Date(user.createdAt).toLocaleDateString()}</p>
+
+      <div className="user-mgmt-filter">
+        <Filter 
+          onFilterApplied={handleFilterApplied}
+          filterConfig={filterConfig}
+          onSearch={handleSearchChange}
+          searchPlaceholder="Search by username or email..."
+        />
+      </div>
+
+      {error && <div className="user-mgmt-error">{error}</div>}
+
+      <div className="user-mgmt-list">
+        {filteredUsers.map((user) => (
+          <div 
+            key={user.id} 
+            className="user-mgmt-card"
+            data-role={user.role}
+          >
+            <div className="user-mgmt-info">
+              <div className="user-mgmt-info-item">
+                <span className="user-mgmt-info-label">Username</span>
+                <span className="user-mgmt-info-value">{user.username}</span>
               </div>
-              <div className="user-actions">
-                <button 
-                  onClick={() => handleEditClick(user)}
-                  className="edit-btn"
-                >
-                  Edit
-                </button>
-                <button 
-                  onClick={() => handleDeleteClick(user)}
-                  className="delete-btn"
-                >
-                  Delete
-                </button>
+              <div className="user-mgmt-info-item">
+                <span className="user-mgmt-info-label">Email</span>
+                <span className="user-mgmt-info-value">{user.email}</span>
+              </div>
+              <div className="user-mgmt-info-item">
+                <span className="user-mgmt-info-label">Role</span>
+                <span className={`user-mgmt-role user-mgmt-role-${user.role}`}>
+                  {user.role}
+                </span>
+              </div>
+              <div className="user-mgmt-info-item">
+                <span className="user-mgmt-info-label">Created</span>
+                <span className="user-mgmt-info-value">
+                  {new Date(user.createdAt).toLocaleDateString()}
+                </span>
               </div>
             </div>
-          ))}
-        </div>
-      )}
+            <div className="user-mgmt-actions">
+              <button 
+                onClick={() => handleEditClick(user)}
+                className="user-mgmt-btn user-mgmt-btn-edit"
+              >
+                <BsPencil /> Edit
+              </button>
+              <button 
+                onClick={() => handleDeleteClick(user)}
+                className="user-mgmt-btn user-mgmt-btn-delete"
+              >
+                <BsTrash /> Delete
+              </button>
+            </div>
+          </div>
+        ))}
+        
+        {filteredUsers.length === 0 && !loading && (
+          <div className="user-mgmt-card" style={{ justifyContent: 'center' }}>
+            <p style={{ margin: 0, color: '#718096' }}>No users found</p>
+          </div>
+        )}
+      </div>
+
       {isCreateModalOpen && (
         <CreateUserModal
           onClose={() => setIsCreateModalOpen(false)}

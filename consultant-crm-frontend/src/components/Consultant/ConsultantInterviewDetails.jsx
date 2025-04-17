@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { toast } from 'react-toastify';
 import Axios from '../../services/api';
-import { BsPencil, BsTrash } from 'react-icons/bs';
+import { BsPencil, BsTrash, BsArrowLeft } from 'react-icons/bs';
 import Modal from 'react-bootstrap/Modal';
 import Form from 'react-bootstrap/Form';
 import Button from 'react-bootstrap/Button';
 import Filter from '../Filter';
 import './ConsultantInterviewDetails.css';
+import { useNavigate } from 'react-router-dom';
 
 const ConsultantInterviewDetails = () => {
   const [interviews, setInterviews] = useState([]);
@@ -17,7 +18,7 @@ const ConsultantInterviewDetails = () => {
   const [selectedInterview, setSelectedInterview] = useState(null);
   const [userRole, setUserRole] = useState(null);
   const [filterConfig, setFilterConfig] = useState([]);
-
+  const navigate = useNavigate();
   const [formData, setFormData] = useState({
     date: '',
     timeEST: '',
@@ -287,9 +288,16 @@ const ConsultantInterviewDetails = () => {
 
   return (
     <div className="container mt-4">
-      <div className="interview-header text-center">
-        <h2 className="display-6 fw-bold mb-3">Interview Schedules</h2>
-        <p className="mb-0">Manage and track all interview schedules</p>
+      <button 
+        className="user-mgmt-back-btn"
+        onClick={() => navigate('/consultants')}
+      >
+        <BsArrowLeft /> Back to Consultants
+      </button>
+   <div className="user-mgmt-header" style={{ textAlign: 'center', marginBottom: '2rem' }}>
+        <div className="user-mgmt-header-actions" style={{ justifyContent: 'center' }}>
+          <h2 className="user-mgmt-title">Interview Schedule</h2>
+        </div>
       </div>
 
       <div className="filter-section">

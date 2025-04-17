@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import Axios from '../../services/api';
 import Toast from '../common/Toast';
-import { BsChevronLeft, BsChevronRight } from 'react-icons/bs';
+import { BsChevronLeft, BsChevronRight, BsArrowLeft } from 'react-icons/bs';
 import Filter from '../Filter';
 import './ConsultantJobDetails.css';
 import { Button, Modal, Form } from 'react-bootstrap';
+import { useNavigate } from 'react-router-dom';
 
 const ConsultantAgreementDetails = () => {
   const [agreements, setAgreements] = useState([]);
@@ -12,7 +13,7 @@ const ConsultantAgreementDetails = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
-
+  const navigate = useNavigate();
   // Pagination states
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
@@ -366,13 +367,16 @@ const ConsultantAgreementDetails = () => {
   return (
     <div className="container">
       <Toast.ToastContainer />
-      <div className="consultant-header text-center">
-        <h2 className="display-6 fw-bold mb-3">
-            Placement Fee
-        </h2>
-        <p className="mb-0">
-          View all consultant agreements
-        </p>
+      <button 
+        className="user-mgmt-back-btn"
+        onClick={() => navigate('/consultants')}
+      >
+        <BsArrowLeft /> Back to Consultants
+      </button>
+      <div className="user-mgmt-header" style={{ textAlign: 'center', marginBottom: '2rem' }}>
+        <div className="user-mgmt-header-actions" style={{ justifyContent: 'center' }}>
+          <h2 className="user-mgmt-title">Placement Fee</h2>
+        </div>
       </div>
 
       {loading && (

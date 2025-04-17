@@ -477,7 +477,11 @@ const ConsultantForm = () => {
 	return (
 		<div className="consultant-form-container">
 			<ToastContainer />
-			<h2>Consultant Registration</h2>
+			<div className="user-mgmt-header" style={{ textAlign: 'center', marginBottom: '2rem' }}>
+        <div className="user-mgmt-header-actions" style={{ justifyContent: 'center' }}>
+          <h2 className="user-mgmt-title">Consultant Registration</h2>
+        </div>
+      </div>
 			{notification.message && (
 				<div className={`notification ${notification.type}`}>
 					{notification.message}
@@ -950,7 +954,7 @@ const ConsultantForm = () => {
 										accept="image/*,.pdf"
 									/>
 									<div className="file-upload-placeholder">
-										<FiUpload size={48} color="#4299e1" />
+										<FiUpload size={48} />
 										<p>Drop your image here, or click to browse</p>
 									</div>
 									{fieldNotifications.registrationProof.message && (

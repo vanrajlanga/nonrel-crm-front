@@ -134,7 +134,7 @@ const Filter = ({ onFilterApplied, filterConfig = [], onSearch, searchPlaceholde
 
       {/* Filter Section */}
       <div className="filter-section">
-        <div className="d-flex justify-content-between align-items-center">
+        <div className="d-flex align-items-center">
           <button 
             className="btn btn-filter"
             onClick={() => setShowFilters(!showFilters)}
