@@ -5,6 +5,8 @@ import { FiUser, FiMail, FiLock, FiArrowRight, FiAlertCircle, FiUserPlus } from 
 import Axios from '../../services/api';
 import './signupForm.css';
 
+const INACTIVITY_TIMEOUT = 60 * 60 * 1000; // 1 hour
+
 const SignupForm = ({ onAuthSuccess }) => {
   const navigate = useNavigate();
   const [userData, setUserData] = useState({
@@ -15,6 +17,34 @@ const SignupForm = ({ onAuthSuccess }) => {
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
+
+  useEffect(() => {
+    const clearAuth = () => {
+      localStorage.clear();
+      window.dispatchEvent(new CustomEvent('authStateChange', { 
+        detail: { isLoggedIn: false }
+      }));
+      window.location.href = '/login';
+    };
+
+    let inactivityTimer = setTimeout(clearAuth, INACTIVITY_TIMEOUT);
+    
+    const resetTimer = () => {
+      clearTimeout(inactivityTimer);
+      inactivityTimer = setTimeout(clearAuth, INACTIVITY_TIMEOUT);
+    };
+
+    ['mousedown', 'keydown', 'mousemove', 'touchstart'].forEach(event => 
+      document.addEventListener(event, resetTimer)
+    );
+
+    return () => {
+      clearTimeout(inactivityTimer);
+      ['mousedown', 'keydown', 'mousemove', 'touchstart'].forEach(event => 
+        document.removeEventListener(event, resetTimer)
+      );
+    };
+  }, []);
 
   useEffect(() => {
     if (error) {

@@ -4,6 +4,8 @@ import { FiMail, FiLock, FiArrowRight, FiAlertCircle, FiUser } from 'react-icons
 import Axios from '../../services/api';
 import './loginForm.css';
 
+const INACTIVITY_TIMEOUT = 60 * 60 * 1000; // 1 hour
+
 const LoginForm = ({ onAuthSuccess }) => {
   const [formData, setFormData] = useState({
     email: '',
@@ -21,6 +23,34 @@ const LoginForm = ({ onAuthSuccess }) => {
       return () => clearTimeout(timer);
     }
   }, [error]);
+
+  useEffect(() => {
+    const clearAuth = () => {
+      localStorage.clear();
+      window.dispatchEvent(new CustomEvent('authStateChange', { 
+        detail: { isLoggedIn: false }
+      }));
+      window.location.href = '/login';
+    };
+
+    let inactivityTimer = setTimeout(clearAuth, INACTIVITY_TIMEOUT);
+    
+    const resetTimer = () => {
+      clearTimeout(inactivityTimer);
+      inactivityTimer = setTimeout(clearAuth, INACTIVITY_TIMEOUT);
+    };
+
+    ['mousedown', 'keydown', 'mousemove', 'touchstart'].forEach(event => 
+      document.addEventListener(event, resetTimer)
+    );
+
+    return () => {
+      clearTimeout(inactivityTimer);
+      ['mousedown', 'keydown', 'mousemove', 'touchstart'].forEach(event => 
+        document.removeEventListener(event, resetTimer)
+      );
+    };
+  }, []);
 
   const handleChange = (e) => {
     const { name, value } = e.target;

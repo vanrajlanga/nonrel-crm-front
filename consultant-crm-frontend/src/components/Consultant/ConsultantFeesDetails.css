@@ -168,7 +168,7 @@
 }
 
 .btn-view-proof:hover {
-  background: linear-gradient(45deg, #357abd, #2a5f8f);
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
   transform: translateY(-1px);
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
 }

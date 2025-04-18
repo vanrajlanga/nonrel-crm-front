@@ -543,12 +543,12 @@ const ConsultantDetails = () => {
   const handleJobSubmit = async (e) => {
     e.preventDefault();
     
-    if (!jobFormData.companyId || !jobFormData.jobId || !jobFormData.dateOfOffer) {
-      Toast.error('Please fill in all required fields');
-      return;
-    }
-
     try {
+      if (!jobFormData.companyId || !jobFormData.jobId || !jobFormData.dateOfOffer) {
+        Toast.error('Please fill in all required fields');
+        return;
+      }
+
       const selectedCompany = companies.find(company => company.id.toString() === jobFormData.companyId.toString());
       const selectedJob = selectedCompanyJobs.find(job => job.id.toString() === jobFormData.jobId.toString());
 
@@ -557,71 +557,58 @@ const ConsultantDetails = () => {
         return;
       }
 
+      const consultant = consultants.find(c => c.id === selectedConsultantId);
+      const isJobLost = consultant?.jobLostCount > 0;
+
       const payload = {
         companyName: selectedCompany.companyName,
         jobType: selectedJob.jobTitle,
         dateOfOffer: jobFormData.dateOfOffer
       };
 
-      console.log('Submitting job with payload:', payload);
-      console.log('Selected consultant ID:', selectedConsultantId);
+      if (isJobLost) {
+        const response = await Axios.put(
+          `/consultants/${selectedConsultantId}/job-details/${consultant.jobDetails?.id}/update-job-lost`,
+          payload
+        );
 
-      const response = await Axios.post(`/consultants/${selectedConsultantId}/job-details`, payload);
-      
-      console.log('Job creation response:', response.data);
-      
-      if (response.data) {
-        // Update the local state to reflect job creation using the response data
-        const updatedConsultants = consultants.map(consultant => {
-          if (consultant.id === selectedConsultantId) {
-            const jobDetails = response.data.jobDetails;
-            console.log('Updating consultant with job details:', {
-              consultantId: consultant.id,
-              currentIsJob: consultant.isJob,
-              newJobDetails: jobDetails
-            });
-            
-            const updatedConsultant = {
-              ...consultant,
-              isJob: true,
-              isPlaced: jobDetails.consultant.isPlaced,
-              isHold: jobDetails.consultant.isHold,
-              isActive: jobDetails.consultant.isActive,
-              isOfferPending: jobDetails.consultant.isOfferPending,
-              companyName: jobDetails.companyName,
-              position: jobDetails.position,
-              dateOfOffer: jobDetails.dateOfOffer,
-              feesStatus: jobDetails.feesStatus,
-              isAgreement: jobDetails.isAgreement,
-              feesInfo: jobDetails.feesInfo,
-              jobDetails: {
-                ...jobDetails,
-                isJob: true
-              }
-            };
-            
-            console.log('Updated consultant state:', updatedConsultant);
-            return updatedConsultant;
-          }
-          return consultant;
-        });
+        if (response.data?.success) {
+          const updatedConsultants = consultants.map(c => {
+            if (c.id === selectedConsultantId) {
+              return {
+                ...c,
+                ...response.data.data.consultant,
+                jobDetails: response.data.data.jobDetails,
+                isJob: true,
+                isPlaced: false,
+                isHold: false,
+                isActive: true,
+                isOfferPending: false
+              };
+            }
+            return c;
+          });
 
-        console.log('Updated consultants array:', updatedConsultants);
-        setConsultants(updatedConsultants);
-        setFilteredConsultants(updatedConsultants);
-        Toast.success(response.data.message);
+          setConsultants(updatedConsultants);
+          setFilteredConsultants(updatedConsultants);
+          Toast.success('Job details updated successfully after job lost');
+        }
+      } else {
+        // Rest of the existing code for normal job creation
+        const response = await Axios.post(`/consultants/${selectedConsultantId}/job-details`, payload);
+        // ... existing success handling code
+      }
+
       setShowJobModal(false);
       setJobFormData({
         companyId: '',
         jobId: '',
-          dateOfOffer: '',
+        dateOfOffer: '',
         jobType: ''
       });
-      }
     } catch (error) {
       console.error('Error submitting job details:', error);
-      console.error('Error response:', error.response?.data);
-      Toast.error(error.response?.data?.message || 'Failed to add job details');
+      Toast.error(error.response?.data?.message || 'Failed to update job details');
     }
   };
 
@@ -1480,7 +1467,11 @@ const ConsultantDetails = () => {
       {/* Job Details Modal */}
       <Modal show={showJobModal} onHide={() => setShowJobModal(false)} centered backdrop={true}>
         <Modal.Header closeButton>
-          <Modal.Title>Add Job Details</Modal.Title>
+          <Modal.Title>
+            {consultants.find(c => c.id === selectedConsultantId)?.jobLostCount > 0 
+              ? 'Update Job Details After Job Lost' 
+              : 'Add Job Details'}
+          </Modal.Title>
         </Modal.Header>
         <Modal.Body>
           <Form onSubmit={handleJobSubmit}>
@@ -1533,7 +1524,9 @@ const ConsultantDetails = () => {
                 Cancel
               </Button>
               <Button variant="primary" type="submit">
-                Save Job Details
+                {consultants.find(c => c.id === selectedConsultantId)?.jobLostCount > 0 
+                  ? 'Update Job Details' 
+                  : 'Save Job Details'}
               </Button>
             </div>
           </Form>

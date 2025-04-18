@@ -824,7 +824,22 @@ const ConsultantFeesDetails = () => {
                                       </tr>
                                     </thead>
                                     <tbody>
-                                      {Array.from({ length: 8 }, (_, i) => i + 1).map(month => (
+                                      {Array.from({ length: 8 }, (_, i) => i + 1).map(month => {
+                                        // Check if agreement is terminated or if previous month is unpaid
+                                        const isTerminated = consultant.agreement.paymentCompletionStatus === 'terminated';
+                                        const previousMonthStatus = month > 1 ? consultant.agreement[`month${month-1}Status`]?.toLowerCase() : 'paid';
+                                        const currentMonthStatus = consultant.agreement[`month${month}Status`]?.toLowerCase();
+                                        const shouldDisableUpdate = isTerminated || 
+                                          (month > 1 && previousMonthStatus !== 'paid') || 
+                                          currentMonthStatus === 'paid' ||
+                                          currentMonthStatus === 'terminated';
+
+                                        // If terminated, show all future months as terminated
+                                        const displayStatus = isTerminated && !currentMonthStatus ? 'terminated' :
+                                          (month > 1 && previousMonthStatus !== 'paid') ? 'terminated' :
+                                          currentMonthStatus || 'pending';
+
+                                        return (
                                         <tr key={month}>
                                           <td>Month {month}</td>
                                           <td>
@@ -841,8 +856,8 @@ const ConsultantFeesDetails = () => {
                                               : '----'}
                                           </td>
                                           <td>
-                                            <span className={`badge bg-${getStatusBadgeColor(consultant.agreement[`month${month}Status`])}`}>
-                                              {(consultant.agreement[`month${month}Status`] || 'pending').toUpperCase()}
+                                            <span className={`badge bg-${getStatusBadgeColor(displayStatus)}`}>
+                                              {displayStatus.toUpperCase()}
                                             </span>
                                           </td>
                                           <td>{consultant.agreement[`month${month}Notes`] || '----'}</td>
@@ -875,13 +890,16 @@ const ConsultantFeesDetails = () => {
                                                 });
                                                 setShowPaymentModal(true);
                                               }}
-                                              disabled={consultant.agreement[`month${month}Status`] === 'paid'}
+                                              disabled={shouldDisableUpdate}
                                             >
-                                              Update Payment
+                                              {shouldDisableUpdate ? 
+                                                (currentMonthStatus === 'paid' ? 'Paid' : 'Terminated') : 
+                                                'Update Payment'}
                                             </Button>
                                           </td>
                                         </tr>
-                                      ))}
+                                        );
+                                      })}
                                     </tbody>
                                   </table>
                                 </div>
