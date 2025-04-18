@@ -825,18 +825,14 @@ const ConsultantFeesDetails = () => {
                                     </thead>
                                     <tbody>
                                       {Array.from({ length: 8 }, (_, i) => i + 1).map(month => {
-                                        // Check if agreement is terminated or if previous month is unpaid
-                                        const isTerminated = consultant.agreement.paymentCompletionStatus === 'terminated';
+                                        // Check only if previous month is unpaid
                                         const previousMonthStatus = month > 1 ? consultant.agreement[`month${month-1}Status`]?.toLowerCase() : 'paid';
                                         const currentMonthStatus = consultant.agreement[`month${month}Status`]?.toLowerCase();
-                                        const shouldDisableUpdate = isTerminated || 
-                                          (month > 1 && previousMonthStatus !== 'paid') || 
-                                          currentMonthStatus === 'paid' ||
-                                          currentMonthStatus === 'terminated';
+                                        const shouldDisableUpdate = (month > 1 && previousMonthStatus !== 'paid') || 
+                                          currentMonthStatus === 'paid';
 
-                                        // If terminated, show all future months as terminated
-                                        const displayStatus = isTerminated && !currentMonthStatus ? 'terminated' :
-                                          (month > 1 && previousMonthStatus !== 'paid') ? 'terminated' :
+                                        // Display status based on current month status or pending
+                                        const displayStatus = (month > 1 && previousMonthStatus !== 'paid') ? 'pending' :
                                           currentMonthStatus || 'pending';
 
                                         return (
@@ -892,9 +888,7 @@ const ConsultantFeesDetails = () => {
                                               }}
                                               disabled={shouldDisableUpdate}
                                             >
-                                              {shouldDisableUpdate ? 
-                                                (currentMonthStatus === 'paid' ? 'Paid' : 'Terminated') : 
-                                                'Update Payment'}
+                                              {currentMonthStatus === 'paid' ? 'Paid' : 'Update Payment'}
                                             </Button>
                                           </td>
                                         </tr>
